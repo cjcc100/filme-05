@@ -18,9 +18,9 @@ interface MovieData {
 
 async function getMovieData(movieId: string): Promise<MovieData | null> {
   try {
-    console.log('Fetching movie data for ID:', movieId);
+    console.log('Fetching movie data for GUID:', movieId);
     
-    // Buscar todos os vídeos e filtrar pelo GUID (método mais confiável)
+    // Buscar todos os vídeos e filtrar pelo GUID
     const bunnyApiUrl = 'https://video.bunnycdn.com/library/722927/videos';
     
     const videosRes = await fetch(bunnyApiUrl, {
@@ -33,12 +33,12 @@ async function getMovieData(movieId: string): Promise<MovieData | null> {
     
     if (!videosRes.ok) {
       console.error('Bunny API error:', videosRes.status);
-      return null;
+      // Se falhar, retorna objeto mínimo com o GUID
+      return { guid: movieId };
     }
     
     const videosData = await videosRes.json();
     console.log('Total videos from Bunny:', videosData.items?.length);
-    console.log('Searching for GUID:', movieId);
     
     // Encontrar o vídeo específico pelo GUID
     const movie = videosData.items?.find((video: any) => video.guid === movieId);
@@ -46,14 +46,16 @@ async function getMovieData(movieId: string): Promise<MovieData | null> {
     if (!movie) {
       console.error('Movie not found with GUID:', movieId);
       console.log('Available GUIDs:', videosData.items?.map((v: any) => v.guid));
-      return null;
+      // Se não encontrar, retorna objeto mínimo com o GUID
+      return { guid: movieId };
     }
     
     console.log('Found movie:', movie.title || movie.name || movie.originalFilename);
     return movie;
   } catch (error) {
     console.error('Error fetching movie data:', error);
-    return null;
+    // Se der erro, retorna objeto mínimo com o GUID
+    return { guid: movieId };
   }
 }
 
@@ -99,44 +101,20 @@ async function searchTMDBMovie(query: string) {
 }
 
 export default async function MoviePage({ params }: { params: { id: string } }) {
-  console.log('MoviePage called with params:', params);
+  console.log('MoviePage called with GUID:', params.id);
   const movieData = await getMovieData(params.id);
+  
+  // Se não tiver dados do Bunny, usa o GUID da URL
+  const movieGuid = movieData?.guid || params.id;
   
   // Buscar automaticamente no TMDb pelo nome do arquivo
   const movieName = movieData?.title || movieData?.name || movieData?.originalFilename || '';
   const tmdbData = movieName ? await searchTMDBMovie(movieName) : null;
   
-  if (!movieData) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
-        <header className="sticky top-0 z-50 bg-zinc-900/80 backdrop-blur-md border-b border-zinc-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">C</span>
-                </div>
-                <span className="text-white font-semibold text-lg">CJCCHUB</span>
-              </Link>
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-white mb-4">Filme não encontrado</h1>
-            <Link href="/" className="text-red-500 hover:text-red-400">
-              Voltar para o início
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
-  }
-  
-  const title = tmdbData?.title || tmdbData?.name || movieData.title || movieData.name || movieData.originalFilename || 'Sem título';
-  const description = tmdbData?.overview || movieData.description || movieData.overview || 'Sem descrição';
-  const year = tmdbData?.release_date?.split('-')[0] || movieData.year || 'N/A';
-  const duration = movieData.length ? `${Math.floor(movieData.length / 60)}:${(movieData.length % 60).toString().padStart(2, '0')}` : 'N/A';
+  const title = tmdbData?.title || tmdbData?.name || movieData?.title || movieData?.name || movieData?.originalFilename || `Filme (${movieGuid.substring(0, 8)}...)`;
+  const description = tmdbData?.overview || movieData?.description || movieData?.overview || 'Sem descrição disponível';
+  const year = tmdbData?.release_date?.split('-')[0] || movieData?.year || 'N/A';
+  const duration = movieData?.length ? `${Math.floor(movieData.length / 60)}:${(movieData.length % 60).toString().padStart(2, '0')}` : 'N/A';
   const rating = tmdbData?.vote_average?.toFixed(1) || 'N/A';
   
   // Prioridade: TMDb backdrop -> TMDb poster -> Bunny thumbnail -> fallback
@@ -144,13 +122,13 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
     ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}`
     : tmdbData?.poster_path
     ? `https://image.tmdb.org/t/p/original${tmdbData.poster_path}`
-    : movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl
+    : movieData?.thumbnailUrl || movieData?.thumbnail || movieData?.posterUrl
     ? (movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl)
-    : `https://vz-c3b5c7e8-b89.b-cdn.net/${movieData.guid}/thumbnail.jpg`;
+    : `https://vz-c3b5c7e8-b89.b-cdn.net/${movieGuid}/thumbnail.jpg`;
     
   const posterUrl = tmdbData?.poster_path
     ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
-    : movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl
+    : movieData?.thumbnailUrl || movieData?.thumbnail || movieData?.posterUrl
     ? (movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl)
     : null;
 
@@ -232,7 +210,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
           <div className="bg-zinc-800 rounded-xl overflow-hidden">
             <div style={{ position: "relative", paddingTop: "56.25%" }}>
               <iframe
-                src={`https://player.mediadelivery.net/embed/722927/${movieData.guid}?autoplay=true`}
+                src={`https://player.mediadelivery.net/embed/722927/${movieGuid}?autoplay=true`}
                 loading="lazy"
                 style={{
                   border: "none",
