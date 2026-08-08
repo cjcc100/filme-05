@@ -105,7 +105,7 @@ async function searchTMDBMovie(query: string) {
     const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
     
     // Limpar a query: remover extensões, números, caracteres especiais
-    const cleanQuery = query
+    let cleanQuery = query
       .replace(/\.[^/.]+$/, '') // Remover extensão
       .replace(/\d+/g, '') // Remover números
       .replace(/[._-]/g, ' ') // Substituir separadores por espaço
@@ -114,11 +114,16 @@ async function searchTMDBMovie(query: string) {
     
     if (cleanQuery.length < 3) return null;
     
+    console.log(`Searching TMDb for: "${cleanQuery}" (original: "${query}")`);
+    
     const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
       next: { revalidate: 3600 }
     });
     
-    if (!searchRes.ok) return null;
+    if (!searchRes.ok) {
+      console.error('TMDb search error:', searchRes.status);
+      return null;
+    }
     
     const searchData = await searchRes.json();
     
@@ -128,8 +133,10 @@ async function searchTMDBMovie(query: string) {
       return searchData.results[0];
     }
     
+    console.log(`No TMDb match found for "${query}"`);
     return null;
   } catch (error) {
+    console.error('Error searching TMDb:', error);
     return null;
   }
 }
@@ -173,13 +180,22 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
   const description = tmdbData?.overview || movieData.description || movieData.overview || 'Sem descrição';
   const year = tmdbData?.release_date?.split('-')[0] || movieData.year || 'N/A';
   const duration = movieData.length ? `${Math.floor(movieData.length / 60)}:${(movieData.length % 60).toString().padStart(2, '0')}` : 'N/A';
+  const rating = tmdbData?.vote_average?.toFixed(1) || 'N/A';
   
-  // Prioridade: TMDb data -> Bunny thumbnail -> fallback
-  const imageUrl = tmdbData?.backdrop_path || tmdbData?.poster_path
-    ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path || tmdbData.poster_path}`
+  // Prioridade: TMDb backdrop -> TMDb poster -> Bunny thumbnail -> fallback
+  const imageUrl = tmdbData?.backdrop_path
+    ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}`
+    : tmdbData?.poster_path
+    ? `https://image.tmdb.org/t/p/original${tmdbData.poster_path}`
     : movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl
     ? (movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl)
     : `https://vz-c3b5c7e8-b89.b-cdn.net/${movieData.guid}/thumbnail.jpg`;
+    
+  const posterUrl = tmdbData?.poster_path
+    ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
+    : movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl
+    ? (movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl)
+    : null;
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -203,7 +219,7 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
 
       <main className="flex-1">
         {/* Header do Filme */}
-        <section className="relative h-[400px] overflow-hidden">
+        <section className="relative h-[500px] overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/50 to-transparent z-10" />
           {imageUrl ? (
             <Image
@@ -217,21 +233,39 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
             <div className="w-full h-full bg-zinc-800" />
           )}
           <div className="absolute bottom-0 left-0 right-0 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-            <div className="max-w-2xl">
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                {title}
-              </h1>
-              <div className="flex gap-4 mb-4">
-                <span className="bg-zinc-700 text-white px-3 py-1 rounded text-sm">
-                  {year}
-                </span>
-                <span className="bg-zinc-700 text-white px-3 py-1 rounded text-sm">
-                  {duration}
-                </span>
+            <div className="flex gap-8 items-end">
+              {posterUrl && (
+                <div className="hidden md:block w-48 h-72 rounded-lg overflow-hidden shadow-2xl">
+                  <Image
+                    src={posterUrl}
+                    alt={title}
+                    width={192}
+                    height={288}
+                    className="object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  {title}
+                </h1>
+                <div className="flex gap-4 mb-4">
+                  <span className="bg-zinc-700 text-white px-3 py-1 rounded text-sm">
+                    {year}
+                  </span>
+                  <span className="bg-zinc-700 text-white px-3 py-1 rounded text-sm">
+                    {duration}
+                  </span>
+                  {rating !== 'N/A' && (
+                    <span className="bg-zinc-700 text-white px-3 py-1 rounded text-sm">
+                      ⭐ {rating}
+                    </span>
+                  )}
+                </div>
+                <p className="text-zinc-300 text-lg line-clamp-3 max-w-2xl">
+                  {description}
+                </p>
               </div>
-              <p className="text-zinc-300 text-lg line-clamp-3">
-                {description}
-              </p>
             </div>
           </div>
         </section>
@@ -261,40 +295,80 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="bg-zinc-800 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-white mb-4">Sobre o filme</h2>
-            <p className="text-zinc-300">
+            <p className="text-zinc-300 text-lg leading-relaxed">
               {description}
             </p>
+            
             {tmdbData && (
-              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="mt-8 space-y-6">
+                {/* Gêneros */}
                 {tmdbData.genres && tmdbData.genres.length > 0 && (
                   <div>
-                    <h3 className="text-zinc-400 text-sm mb-2">Gêneros</h3>
-                    <p className="text-white">
-                      {tmdbData.genres.map((g: any) => g.name).join(', ')}
-                    </p>
+                    <h3 className="text-zinc-400 text-sm font-semibold mb-2">Gêneros</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {tmdbData.genres.map((g: any) => (
+                        <span key={g.id} className="bg-zinc-700 text-white px-3 py-1 rounded-full text-sm">
+                          {g.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {tmdbData.vote_average && (
+                
+                {/* Metadados */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  {tmdbData.vote_average && (
+                    <div>
+                      <h3 className="text-zinc-400 text-sm font-semibold mb-2">Avaliação</h3>
+                      <p className="text-white text-lg">
+                        ⭐ {tmdbData.vote_average.toFixed(1)}/10
+                      </p>
+                      {tmdbData.vote_count && (
+                        <p className="text-zinc-500 text-xs mt-1">
+                          {tmdbData.vote_count.toLocaleString()} votos
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {tmdbData.release_date && (
+                    <div>
+                      <h3 className="text-zinc-400 text-sm font-semibold mb-2">Lançamento</h3>
+                      <p className="text-white">
+                        {new Date(tmdbData.release_date).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {tmdbData.runtime && (
+                    <div>
+                      <h3 className="text-zinc-400 text-sm font-semibold mb-2">Duração</h3>
+                      <p className="text-white">
+                        {Math.floor(tmdbData.runtime / 60)}h {tmdbData.runtime % 60}m
+                      </p>
+                    </div>
+                  )}
+                  
+                  {tmdbData.original_language && (
+                    <div>
+                      <h3 className="text-zinc-400 text-sm font-semibold mb-2">Idioma Original</h3>
+                      <p className="text-white uppercase">
+                        {tmdbData.original_language}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Diretores e Elenco (se disponível) */}
+                {tmdbData.production_companies && tmdbData.production_companies.length > 0 && (
                   <div>
-                    <h3 className="text-zinc-400 text-sm mb-2">Avaliação</h3>
+                    <h3 className="text-zinc-400 text-sm font-semibold mb-2">Produção</h3>
                     <p className="text-white">
-                      {tmdbData.vote_average.toFixed(1)}/10
-                    </p>
-                  </div>
-                )}
-                {tmdbData.release_date && (
-                  <div>
-                    <h3 className="text-zinc-400 text-sm mb-2">Lançamento</h3>
-                    <p className="text-white">
-                      {new Date(tmdbData.release_date).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                )}
-                {tmdbData.runtime && (
-                  <div>
-                    <h3 className="text-zinc-400 text-sm mb-2">Duração</h3>
-                    <p className="text-white">
-                      {Math.floor(tmdbData.runtime / 60)}h {tmdbData.runtime % 60}m
+                      {tmdbData.production_companies.map((c: any) => c.name).join(', ')}
                     </p>
                   </div>
                 )}

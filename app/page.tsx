@@ -94,7 +94,7 @@ async function searchTMDBMovie(query: string) {
     const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
     
     // Limpar a query: remover extensões, números, caracteres especiais
-    const cleanQuery = query
+    let cleanQuery = query
       .replace(/\.[^/.]+$/, '') // Remover extensão
       .replace(/\d+/g, '') // Remover números
       .replace(/[._-]/g, ' ') // Substituir separadores por espaço
@@ -103,11 +103,16 @@ async function searchTMDBMovie(query: string) {
     
     if (cleanQuery.length < 3) return null;
     
+    console.log(`Searching TMDb for: "${cleanQuery}" (original: "${query}")`);
+    
     const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
       next: { revalidate: 3600 }
     });
     
-    if (!searchRes.ok) return null;
+    if (!searchRes.ok) {
+      console.error('TMDb search error:', searchRes.status);
+      return null;
+    }
     
     const searchData = await searchRes.json();
     
@@ -117,8 +122,10 @@ async function searchTMDBMovie(query: string) {
       return searchData.results[0];
     }
     
+    console.log(`No TMDb match found for "${query}"`);
     return null;
   } catch (error) {
+    console.error('Error searching TMDb:', error);
     return null;
   }
 }
