@@ -97,11 +97,6 @@ export default async function Home() {
   // Filtrar vídeos sem coleção (filmes uploadados) dos vídeos com coleção (séries)
   const standaloneMovies = bunnyMovies?.items?.filter((video: any) => !video.collectionId) || [];
   const seriesEpisodes = bunnyMovies?.items?.filter((video: any) => video.collectionId) || [];
-  
-  // Usar filmes do Bunny (sem coleção), se disponíveis, senão usar TMDb como fallback
-  const movies = (standaloneMovies.length > 0) 
-    ? standaloneMovies.slice(0, 20) 
-    : (tmdbData?.results?.slice(0, 20) || []);
     
   // Mapeamento de coleções Bunny para IDs TMDb
   const collectionMappings: Record<string, { seriesId: string; seasonNumber: string }> = {
