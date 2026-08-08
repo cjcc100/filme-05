@@ -73,6 +73,22 @@ async function getTMDBSeriesData(seriesId: string, seasonNumber: string) {
   }
 }
 
+async function getTMDBMovieData(movieId: string) {
+  try {
+    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
+    
+    const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&language=pt-BR`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (!movieRes.ok) return null;
+    
+    return movieRes.json();
+  } catch (error) {
+    return null;
+  }
+}
+
 export default async function Home() {
   const tmdbData = await getTmdbData();
   const bunnyMovies = await getBunnyMovies();
@@ -92,6 +108,12 @@ export default async function Home() {
     'f079e325-68b5-4771-8f0d-15bb8929ab58': { seriesId: '4604', seasonNumber: '1' } // Smallville Temporada 1
   };
   
+  // Mapeamento de filmes Bunny para IDs TMDb
+  const movieMappings: Record<string, string> = {
+    // Adicione aqui os GUIDs dos seus filmes do Bunny e os IDs TMDb correspondentes
+    // Exemplo: 'video-guid': 'tmdb-movie-id'
+  };
+  
   // Enriquecer coleções com dados TMDb
   const enrichedCollections = await Promise.all(
     (bunnyCollections?.items?.slice(0, 8) || []).map(async (collection: any) => {
@@ -103,6 +125,23 @@ export default async function Home() {
       };
     })
   );
+  
+  // Enriquecer filmes com dados TMDb
+  const enrichedMovies = await Promise.all(
+    standaloneMovies.slice(0, 20).map(async (movie: any) => {
+      const tmdbId = movieMappings[movie.guid];
+      const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
+      return {
+        ...movie,
+        tmdbData
+      };
+    })
+  );
+  
+  // Usar filmes enriquecidos do Bunny (sem coleção), se disponíveis, senão usar TMDb como fallback
+  const movies = (enrichedMovies.length > 0) 
+    ? enrichedMovies 
+    : (tmdbData?.results?.slice(0, 20) || []);
     
   const featuredMovie = movies[0] || seriesEpisodes[0] || tmdbData?.results?.[0];
   return (
@@ -135,16 +174,24 @@ export default async function Home() {
           {featuredMovie ? (
             (() => {
               const isBunny = featuredMovie.guid;
-              const imageUrl = isBunny && (featuredMovie.thumbnailUrl || featuredMovie.thumbnail)
+              const tmdbData = featuredMovie.tmdbData;
+              
+              // Prioridade: TMDb data -> Bunny thumbnail -> fallback
+              const imageUrl = tmdbData?.backdrop_path || tmdbData?.poster_path
+                ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path || tmdbData.poster_path}`
+                : isBunny && (featuredMovie.thumbnailUrl || featuredMovie.thumbnail)
                 ? (featuredMovie.thumbnailUrl || `https://${process.env.BUNNY_CDN_HOSTNAME || 'vz-c3b5c7e8-b89.b-cdn.net'}/${featuredMovie.guid}/${featuredMovie.thumbnail}`)
                 : featuredMovie.backdrop_path || featuredMovie.poster_path
                 ? `https://image.tmdb.org/t/p/original${featuredMovie.backdrop_path || featuredMovie.poster_path}`
                 : null;
               
+              const title = tmdbData?.title || tmdbData?.name || featuredMovie.title || featuredMovie.name || 'Filme em destaque';
+              const overview = tmdbData?.overview || featuredMovie.overview || featuredMovie.description || 'Carregando descrição...';
+              
               return imageUrl ? (
                 <Image
                   src={imageUrl}
-                  alt={featuredMovie.title || featuredMovie.name || 'Filme em destaque'}
+                  alt={title}
                   fill
                   className="object-cover"
                   priority
@@ -174,10 +221,10 @@ export default async function Home() {
                 Destaque
               </span>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                {featuredMovie?.title || featuredMovie?.name || 'Carregando...'}
+                {featuredMovie?.tmdbData?.title || featuredMovie?.tmdbData?.name || featuredMovie?.title || featuredMovie?.name || 'Carregando...'}
               </h1>
               <p className="text-zinc-300 text-lg mb-6">
-                {featuredMovie?.overview || featuredMovie?.description || 'Carregando descrição...'}
+                {featuredMovie?.tmdbData?.overview || featuredMovie?.overview || featuredMovie?.description || 'Carregando descrição...'}
               </p>
               <div className="flex gap-4">
                 <button className="bg-white text-zinc-900 px-6 py-3 rounded-lg font-semibold hover:bg-zinc-100 transition-colors flex items-center gap-2">
@@ -203,16 +250,21 @@ export default async function Home() {
             {movies.map((movie: any) => {
               // Verificar se é do Bunny (tem guid) ou do TMDb (tem id)
               const isBunny = movie.guid;
-              const imageUrl = isBunny && (movie.thumbnailUrl || movie.thumbnail)
+              const tmdbData = movie.tmdbData;
+              
+              // Prioridade: TMDb data -> Bunny thumbnail -> TMDb fallback
+              const imageUrl = tmdbData?.poster_path
+                ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
+                : isBunny && (movie.thumbnailUrl || movie.thumbnail)
                 ? (movie.thumbnailUrl || `https://${process.env.BUNNY_CDN_HOSTNAME || 'vz-c3b5c7e8-b89.b-cdn.net'}/${movie.guid}/${movie.thumbnail}`)
                 : movie.poster_path
                 ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                 : null;
               
-              const title = movie.title || movie.name || 'Sem título';
-              const year = movie.release_date?.split('-')[0] || movie.year || 'N/A';
-              const rating = movie.vote_average?.toFixed(1) || (movie.length ? `${Math.floor(movie.length / 60)}:${(movie.length % 60).toString().padStart(2, '0')}` : 'N/A');
-              const description = movie.description || movie.overview || 'Sem descrição';
+              const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || 'Sem título';
+              const year = tmdbData?.release_date?.split('-')[0] || movie.release_date?.split('-')[0] || movie.year || 'N/A';
+              const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || (movie.length ? `${Math.floor(movie.length / 60)}:${(movie.length % 60).toString().padStart(2, '0')}` : 'N/A');
+              const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
 
               return (
                 <div
