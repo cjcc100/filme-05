@@ -16,9 +16,39 @@ interface MovieData {
   tmdbData?: any;
 }
 
-async function getMovieData(movieId: string): Promise<MovieData | null> {
+async function getMovieData(movieGuid: string): Promise<MovieData | null> {
   try {
-    console.log('Fetching movie data for GUID:', movieId);
+    console.log('Fetching movie data for GUID:', movieGuid);
+    
+    // Buscar diretamente o vídeo específico pelo GUID
+    const bunnyApiUrl = `https://video.bunnycdn.com/library/722927/videos/${movieGuid}`;
+    
+    const videoRes = await fetch(bunnyApiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
+      },
+      next: { revalidate: 1800 }
+    });
+    
+    if (!videoRes.ok) {
+      console.error('Bunny API error for specific video:', videoRes.status);
+      // Se falhar buscar direto, tenta buscar todos e filtrar
+      return await getMovieDataFallback(movieGuid);
+    }
+    
+    const movie = await videoRes.json();
+    console.log('Found movie via direct API:', movie.title || movie.name || movie.originalFilename);
+    return movie;
+  } catch (error) {
+    console.error('Error fetching movie data directly:', error);
+    return await getMovieDataFallback(movieGuid);
+  }
+}
+
+async function getMovieDataFallback(movieGuid: string): Promise<MovieData | null> {
+  try {
+    console.log('Using fallback: listing all videos to find GUID:', movieGuid);
     
     // Buscar todos os vídeos e filtrar pelo GUID
     const bunnyApiUrl = 'https://video.bunnycdn.com/library/722927/videos';
@@ -32,30 +62,30 @@ async function getMovieData(movieId: string): Promise<MovieData | null> {
     });
     
     if (!videosRes.ok) {
-      console.error('Bunny API error:', videosRes.status);
+      console.error('Bunny API error in fallback:', videosRes.status);
       // Se falhar, retorna objeto mínimo com o GUID
-      return { guid: movieId };
+      return { guid: movieGuid };
     }
     
     const videosData = await videosRes.json();
     console.log('Total videos from Bunny:', videosData.items?.length);
     
     // Encontrar o vídeo específico pelo GUID
-    const movie = videosData.items?.find((video: any) => video.guid === movieId);
+    const movie = videosData.items?.find((video: any) => video.guid === movieGuid);
     
     if (!movie) {
-      console.error('Movie not found with GUID:', movieId);
+      console.error('Movie not found with GUID:', movieGuid);
       console.log('Available GUIDs:', videosData.items?.map((v: any) => v.guid));
       // Se não encontrar, retorna objeto mínimo com o GUID
-      return { guid: movieId };
+      return { guid: movieGuid };
     }
     
-    console.log('Found movie:', movie.title || movie.name || movie.originalFilename);
+    console.log('Found movie via fallback:', movie.title || movie.name || movie.originalFilename);
     return movie;
   } catch (error) {
-    console.error('Error fetching movie data:', error);
+    console.error('Error in fallback:', error);
     // Se der erro, retorna objeto mínimo com o GUID
-    return { guid: movieId };
+    return { guid: movieGuid };
   }
 }
 
