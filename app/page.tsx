@@ -25,9 +25,7 @@ async function getBunnyMovies() {
       next: { revalidate: 1800 }
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    console.log('Bunny Movies Data:', JSON.stringify(data?.items?.[0], null, 2));
-    return data;
+    return res.json();
   } catch (error) {
     return null;
   }
@@ -128,19 +126,6 @@ export default async function Home() {
     standaloneMovies.slice(0, 20).map(async (movie: any) => {
       const tmdbId = movieMappings[movie.guid];
       const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
-      
-      // Log para debug - verificar dados do Bunny
-      console.log('Bunny Movie:', {
-        guid: movie.guid,
-        title: movie.title,
-        name: movie.name,
-        originalFilename: movie.originalFilename,
-        thumbnailUrl: movie.thumbnailUrl,
-        thumbnail: movie.thumbnail,
-        posterUrl: movie.posterUrl,
-        description: movie.description,
-        overview: movie.overview
-      });
       
       return {
         ...movie,
@@ -286,8 +271,9 @@ export default async function Home() {
               const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
 
               return (
-                <div
+                <Link
                   key={movie.guid || movie.id}
+                  href={isBunny ? `/movie/${movie.guid}` : `#`}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >
                   <div className="relative aspect-[2/3] overflow-hidden">
@@ -317,7 +303,7 @@ export default async function Home() {
                       {description}
                     </p>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
