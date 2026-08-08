@@ -100,18 +100,47 @@ async function getTMDBMovieData(movieId: string) {
   }
 }
 
+async function searchTMDBMovie(query: string) {
+  try {
+    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
+    
+    // Limpar a query: remover extensões, números, caracteres especiais
+    const cleanQuery = query
+      .replace(/\.[^/.]+$/, '') // Remover extensão
+      .replace(/\d+/g, '') // Remover números
+      .replace(/[._-]/g, ' ') // Substituir separadores por espaço
+      .replace(/\s+/g, ' ') // Remover espaços extras
+      .trim();
+    
+    if (cleanQuery.length < 3) return null;
+    
+    const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (!searchRes.ok) return null;
+    
+    const searchData = await searchRes.json();
+    
+    // Retornar o primeiro resultado se houver
+    if (searchData.results && searchData.results.length > 0) {
+      console.log(`Found TMDb match for "${query}":`, searchData.results[0].title);
+      return searchData.results[0];
+    }
+    
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 export default async function MoviePage({ params }: { params: { id: string } }) {
   console.log('MoviePage called with params:', params);
   const movieData = await getMovieData(params.id);
   
-  // Mapeamento de filmes Bunny para IDs TMDb
-  const movieMappings: Record<string, string> = {
-    // Adicione aqui os GUIDs dos seus filmes do Bunny e os IDs TMDb correspondentes
-    // Exemplo: 'video-guid': 'tmdb-movie-id'
-  };
-  
-  const tmdbId = movieMappings[params.id];
-  const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
+  // Buscar automaticamente no TMDb pelo nome do arquivo
+  const movieName = movieData?.title || movieData?.name || movieData?.originalFilename || '';
+  const tmdbData = movieName ? await searchTMDBMovie(movieName) : null;
   
   if (!movieData) {
     return (

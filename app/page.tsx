@@ -89,6 +89,40 @@ async function getTMDBMovieData(movieId: string) {
   }
 }
 
+async function searchTMDBMovie(query: string) {
+  try {
+    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
+    
+    // Limpar a query: remover extensões, números, caracteres especiais
+    const cleanQuery = query
+      .replace(/\.[^/.]+$/, '') // Remover extensão
+      .replace(/\d+/g, '') // Remover números
+      .replace(/[._-]/g, ' ') // Substituir separadores por espaço
+      .replace(/\s+/g, ' ') // Remover espaços extras
+      .trim();
+    
+    if (cleanQuery.length < 3) return null;
+    
+    const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (!searchRes.ok) return null;
+    
+    const searchData = await searchRes.json();
+    
+    // Retornar o primeiro resultado se houver
+    if (searchData.results && searchData.results.length > 0) {
+      console.log(`Found TMDb match for "${query}":`, searchData.results[0].title);
+      return searchData.results[0];
+    }
+    
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 export default async function Home() {
   const tmdbData = await getTmdbData();
   const bunnyMovies = await getBunnyMovies();
@@ -103,12 +137,6 @@ export default async function Home() {
     'f079e325-68b5-4771-8f0d-15bb8929ab58': { seriesId: '4604', seasonNumber: '1' } // Smallville Temporada 1
   };
   
-  // Mapeamento de filmes Bunny para IDs TMDb
-  const movieMappings: Record<string, string> = {
-    // Adicione aqui os GUIDs dos seus filmes do Bunny e os IDs TMDb correspondentes
-    // Exemplo: 'video-guid': 'tmdb-movie-id'
-  };
-  
   // Enriquecer coleções com dados TMDb
   const enrichedCollections = await Promise.all(
     (bunnyCollections?.items?.slice(0, 8) || []).map(async (collection: any) => {
@@ -121,20 +149,21 @@ export default async function Home() {
     })
   );
   
-  // Enriquecer filmes com dados TMDb
+  // Enriquecer filmes com dados TMDb - busca automática pelo nome
   const enrichedMovies = await Promise.all(
     standaloneMovies.slice(0, 20).map(async (movie: any) => {
-      const tmdbId = movieMappings[movie.guid];
-      const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
+      // Buscar automaticamente no TMDb pelo nome do arquivo
+      const movieName = movie.title || movie.name || movie.originalFilename || '';
+      const tmdbData = movieName ? await searchTMDBMovie(movieName) : null;
       
-      console.log('Movie GUID:', movie.guid, 'Title:', movie.title || movie.name || movie.originalFilename);
+      console.log('Movie GUID:', movie.guid, 'Name:', movieName, 'TMDb found:', !!tmdbData);
       
       return {
         ...movie,
         tmdbData,
         // Garantir que temos pelo menos os dados do Bunny disponíveis
-        title: movie.title || movie.name || movie.originalFilename || 'Sem título',
-        description: movie.description || movie.overview || 'Sem descrição',
+        title: tmdbData?.title || movie.title || movie.name || movie.originalFilename || 'Sem título',
+        description: tmdbData?.overview || movie.description || movie.overview || 'Sem descrição',
         thumbnailUrl: movie.thumbnailUrl || movie.thumbnail || movie.posterUrl,
         // Garantir que o GUID está presente
         guid: movie.guid
