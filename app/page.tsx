@@ -164,6 +164,7 @@ export default async function Home() {
       const tmdbData = movieName ? await searchTMDBMovie(movieName) : null;
       
       console.log('Movie GUID:', movie.guid, 'Name:', movieName, 'TMDb found:', !!tmdbData);
+      console.log('Bunny thumbnail:', movie.thumbnailUrl);
       
       return {
         ...movie,
@@ -171,7 +172,7 @@ export default async function Home() {
         // Garantir que temos pelo menos os dados do Bunny disponíveis
         title: tmdbData?.title || movie.title || movie.name || movie.originalFilename || 'Sem título',
         description: tmdbData?.overview || movie.description || movie.overview || 'Sem descrição',
-        thumbnailUrl: movie.thumbnailUrl || movie.thumbnail || movie.posterUrl,
+        thumbnailUrl: movie.thumbnailUrl, // Usar diretamente o thumbnailUrl do Bunny
         // Garantir que o GUID está presente
         guid: movie.guid
       };

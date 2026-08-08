@@ -147,19 +147,19 @@ export default async function MoviePage({ params }: { params: { id: string } }) 
   const duration = movieData?.length ? `${Math.floor(movieData.length / 60)}:${(movieData.length % 60).toString().padStart(2, '0')}` : 'N/A';
   const rating = tmdbData?.vote_average?.toFixed(1) || 'N/A';
   
-  // Prioridade: TMDb backdrop -> TMDb poster -> Bunny thumbnail -> fallback
+  // Prioridade: TMDb backdrop -> TMDb poster -> Bunny thumbnailUrl -> fallback
   const imageUrl = tmdbData?.backdrop_path
     ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}`
     : tmdbData?.poster_path
     ? `https://image.tmdb.org/t/p/original${tmdbData.poster_path}`
-    : movieData?.thumbnailUrl || movieData?.thumbnail || movieData?.posterUrl
-    ? (movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl)
+    : movieData?.thumbnailUrl
+    ? movieData.thumbnailUrl
     : `https://vz-c3b5c7e8-b89.b-cdn.net/${movieGuid}/thumbnail.jpg`;
     
   const posterUrl = tmdbData?.poster_path
     ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
-    : movieData?.thumbnailUrl || movieData?.thumbnail || movieData?.posterUrl
-    ? (movieData.thumbnailUrl || movieData.thumbnail || movieData.posterUrl)
+    : movieData?.thumbnailUrl
+    ? movieData.thumbnailUrl
     : null;
 
   return (
