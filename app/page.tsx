@@ -128,7 +128,11 @@ export default async function Home() {
       const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
       return {
         ...movie,
-        tmdbData
+        tmdbData,
+        // Garantir que temos pelo menos os dados do Bunny disponíveis
+        title: movie.title || movie.name || movie.originalFilename || 'Sem título',
+        description: movie.description || movie.overview || 'Sem descrição',
+        thumbnailUrl: movie.thumbnailUrl || movie.thumbnail
       };
     })
   );
@@ -174,14 +178,16 @@ export default async function Home() {
               // Prioridade: TMDb data -> Bunny thumbnail -> fallback
               const imageUrl = tmdbData?.backdrop_path || tmdbData?.poster_path
                 ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path || tmdbData.poster_path}`
-                : isBunny && (featuredMovie.thumbnailUrl || featuredMovie.thumbnail)
-                ? (featuredMovie.thumbnailUrl || `https://${process.env.BUNNY_CDN_HOSTNAME || 'vz-c3b5c7e8-b89.b-cdn.net'}/${featuredMovie.guid}/${featuredMovie.thumbnail}`)
+                : isBunny && (featuredMovie.thumbnailUrl || featuredMovie.thumbnail || featuredMovie.posterUrl)
+                ? (featuredMovie.thumbnailUrl || featuredMovie.thumbnail || featuredMovie.posterUrl)
+                : isBunny && featuredMovie.guid
+                ? `https://vz-c3b5c7e8-b89.b-cdn.net/${featuredMovie.guid}/thumbnail.jpg`
                 : featuredMovie.backdrop_path || featuredMovie.poster_path
                 ? `https://image.tmdb.org/t/p/original${featuredMovie.backdrop_path || featuredMovie.poster_path}`
                 : null;
               
-              const title = tmdbData?.title || tmdbData?.name || featuredMovie.title || featuredMovie.name || 'Filme em destaque';
-              const overview = tmdbData?.overview || featuredMovie.overview || featuredMovie.description || 'Carregando descrição...';
+              const title = tmdbData?.title || tmdbData?.name || featuredMovie.title || featuredMovie.name || featuredMovie.originalFilename || 'Filme em destaque';
+              const overview = tmdbData?.overview || featuredMovie.description || featuredMovie.overview || 'Carregando descrição...';
               
               return imageUrl ? (
                 <Image
@@ -250,13 +256,15 @@ export default async function Home() {
               // Prioridade: TMDb data -> Bunny thumbnail -> TMDb fallback
               const imageUrl = tmdbData?.poster_path
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
-                : isBunny && (movie.thumbnailUrl || movie.thumbnail)
-                ? (movie.thumbnailUrl || `https://${process.env.BUNNY_CDN_HOSTNAME || 'vz-c3b5c7e8-b89.b-cdn.net'}/${movie.guid}/${movie.thumbnail}`)
+                : isBunny && (movie.thumbnailUrl || movie.thumbnail || movie.posterUrl)
+                ? (movie.thumbnailUrl || movie.thumbnail || movie.posterUrl)
+                : isBunny && movie.guid
+                ? `https://vz-c3b5c7e8-b89.b-cdn.net/${movie.guid}/thumbnail.jpg`
                 : movie.poster_path
                 ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                 : null;
               
-              const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || 'Sem título';
+              const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || movie.originalFilename || 'Sem título';
               const year = tmdbData?.release_date?.split('-')[0] || movie.release_date?.split('-')[0] || movie.year || 'N/A';
               const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || (movie.length ? `${Math.floor(movie.length / 60)}:${(movie.length % 60).toString().padStart(2, '0')}` : 'N/A');
               const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
