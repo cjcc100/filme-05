@@ -1,7 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
 
-async function getCollectionData(collectionId: string) {
+interface CollectionInfo {
+  guid?: string;
+  name?: string;
+  description?: string;
+  [key: string]: any;
+}
+
+interface CollectionData {
+  name: string;
+  items: any[];
+  totalItems: number;
+  [key: string]: any;
+}
+
+async function getCollectionData(collectionId: string): Promise<CollectionData | null> {
   try {
     // Usar endpoint correto da API Bunny para vídeos
     const bunnyApiUrl = 'https://video.bunnycdn.com/library/722927/videos';
@@ -33,7 +47,7 @@ async function getCollectionData(collectionId: string) {
       next: { revalidate: 1800 }
     });
     
-    let collectionInfo = {};
+    let collectionInfo: CollectionInfo = {};
     if (collectionRes.ok) {
       const collectionsData = await collectionRes.json();
       // Encontrar a coleção específica
@@ -42,7 +56,7 @@ async function getCollectionData(collectionId: string) {
     
     return {
       ...collectionInfo,
-      name: collectionInfo?.name || '',
+      name: (collectionInfo as CollectionInfo)?.name || '',
       items: collectionVideos,
       totalItems: collectionVideos.length
     };
@@ -220,6 +234,21 @@ export default async function CollectionPage({ params }: { params: { id: string 
                         </svg>
                         Assistir
                       </button>
+                      <div style={{ position: "relative", paddingTop: "56.25%", marginTop: "16px" }}>
+                        <iframe
+                          src={`https://player.mediadelivery.net/embed/722927/${episode.guid}?autoplay=false`}
+                          loading="lazy"
+                          style={{
+                            border: "none",
+                            position: "absolute",
+                            top: "0",
+                            height: "100%",
+                            width: "100%",
+                          }}
+                          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                          allowFullScreen={true}
+                        ></iframe>
+                      </div>
                     </div>
                   </div>
                 </div>
