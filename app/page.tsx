@@ -127,6 +127,8 @@ export default async function Home() {
       const tmdbId = movieMappings[movie.guid];
       const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
       
+      console.log('Movie GUID:', movie.guid, 'Title:', movie.title || movie.name || movie.originalFilename);
+      
       return {
         ...movie,
         tmdbData,

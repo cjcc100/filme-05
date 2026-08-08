@@ -18,6 +18,8 @@ interface MovieData {
 
 async function getMovieData(movieId: string): Promise<MovieData | null> {
   try {
+    console.log('Fetching movie data for ID:', movieId);
+    
     // Usar endpoint correto da API Bunny para vídeos
     const bunnyApiUrl = 'https://video.bunnycdn.com/library/722927/videos';
     
@@ -30,20 +32,26 @@ async function getMovieData(movieId: string): Promise<MovieData | null> {
     });
     
     if (!videosRes.ok) {
+      console.error('Bunny API error:', videosRes.status);
       return null;
     }
     
     const videosData = await videosRes.json();
+    console.log('Total videos from Bunny:', videosData.items?.length);
+    console.log('Available GUIDs:', videosData.items?.map((v: any) => v.guid));
     
     // Encontrar o vídeo específico pelo GUID
     const movie = videosData.items?.find((video: any) => video.guid === movieId);
     
     if (!movie) {
+      console.error('Movie not found with GUID:', movieId);
       return null;
     }
     
+    console.log('Found movie:', movie.title || movie.name || movie.originalFilename);
     return movie;
   } catch (error) {
+    console.error('Error fetching movie data:', error);
     return null;
   }
 }
@@ -65,6 +73,7 @@ async function getTMDBMovieData(movieId: string) {
 }
 
 export default async function MoviePage({ params }: { params: { id: string } }) {
+  console.log('MoviePage called with params:', params);
   const movieData = await getMovieData(params.id);
   
   // Mapeamento de filmes Bunny para IDs TMDb
