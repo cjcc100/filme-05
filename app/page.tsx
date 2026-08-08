@@ -25,7 +25,9 @@ async function getBunnyMovies() {
       next: { revalidate: 1800 }
     });
     if (!res.ok) return null;
-    return res.json();
+    const data = await res.json();
+    console.log('Bunny Movies Data:', JSON.stringify(data?.items?.[0], null, 2));
+    return data;
   } catch (error) {
     return null;
   }
@@ -126,13 +128,27 @@ export default async function Home() {
     standaloneMovies.slice(0, 20).map(async (movie: any) => {
       const tmdbId = movieMappings[movie.guid];
       const tmdbData = tmdbId ? await getTMDBMovieData(tmdbId) : null;
+      
+      // Log para debug - verificar dados do Bunny
+      console.log('Bunny Movie:', {
+        guid: movie.guid,
+        title: movie.title,
+        name: movie.name,
+        originalFilename: movie.originalFilename,
+        thumbnailUrl: movie.thumbnailUrl,
+        thumbnail: movie.thumbnail,
+        posterUrl: movie.posterUrl,
+        description: movie.description,
+        overview: movie.overview
+      });
+      
       return {
         ...movie,
         tmdbData,
         // Garantir que temos pelo menos os dados do Bunny disponíveis
         title: movie.title || movie.name || movie.originalFilename || 'Sem título',
         description: movie.description || movie.overview || 'Sem descrição',
-        thumbnailUrl: movie.thumbnailUrl || movie.thumbnail
+        thumbnailUrl: movie.thumbnailUrl || movie.thumbnail || movie.posterUrl
       };
     })
   );
