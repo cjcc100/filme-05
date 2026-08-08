@@ -42,6 +42,7 @@ async function getCollectionData(collectionId: string) {
     
     return {
       ...collectionInfo,
+      name: collectionInfo?.name || '',
       items: collectionVideos,
       totalItems: collectionVideos.length
     };
