@@ -294,6 +294,12 @@ export default async function Home() {
               const isBunny = movie.guid;
               const tmdbData = movie.tmdbData;
               
+              console.log('Rendering movie card:', {
+                guid: movie.guid,
+                title: movie.title || movie.name || movie.originalFilename,
+                isBunny
+              });
+              
               // Prioridade: TMDb data -> Bunny thumbnail -> TMDb fallback
               const imageUrl = tmdbData?.poster_path
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
@@ -313,7 +319,7 @@ export default async function Home() {
               return (
                 <Link
                   key={movie.guid || movie.id}
-                  href={isBunny ? `/movie/${movie.guid}` : `#`}
+                  href={isBunny && movie.guid ? `/movie/${movie.guid}` : `#`}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >
                   <div className="relative aspect-[2/3] overflow-hidden">

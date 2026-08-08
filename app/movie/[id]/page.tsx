@@ -20,36 +20,7 @@ async function getMovieData(movieId: string): Promise<MovieData | null> {
   try {
     console.log('Fetching movie data for ID:', movieId);
     
-    // Buscar diretamente o vídeo específico pelo GUID
-    const bunnyApiUrl = `https://video.bunnycdn.com/library/722927/videos/${movieId}`;
-    
-    const videoRes = await fetch(bunnyApiUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
-      },
-      next: { revalidate: 1800 }
-    });
-    
-    if (!videoRes.ok) {
-      console.error('Bunny API error:', videoRes.status);
-      // Se falhar buscar direto, tenta buscar todos e filtrar
-      return await getMovieDataFallback(movieId);
-    }
-    
-    const movie = await videoRes.json();
-    console.log('Found movie:', movie.title || movie.name || movie.originalFilename);
-    return movie;
-  } catch (error) {
-    console.error('Error fetching movie data:', error);
-    return await getMovieDataFallback(movieId);
-  }
-}
-
-async function getMovieDataFallback(movieId: string): Promise<MovieData | null> {
-  try {
-    console.log('Using fallback method for ID:', movieId);
-    
+    // Buscar todos os vídeos e filtrar pelo GUID (método mais confiável)
     const bunnyApiUrl = 'https://video.bunnycdn.com/library/722927/videos';
     
     const videosRes = await fetch(bunnyApiUrl, {
@@ -61,41 +32,27 @@ async function getMovieDataFallback(movieId: string): Promise<MovieData | null> 
     });
     
     if (!videosRes.ok) {
-      console.error('Bunny API error in fallback:', videosRes.status);
+      console.error('Bunny API error:', videosRes.status);
       return null;
     }
     
     const videosData = await videosRes.json();
     console.log('Total videos from Bunny:', videosData.items?.length);
+    console.log('Searching for GUID:', movieId);
     
     // Encontrar o vídeo específico pelo GUID
     const movie = videosData.items?.find((video: any) => video.guid === movieId);
     
     if (!movie) {
       console.error('Movie not found with GUID:', movieId);
+      console.log('Available GUIDs:', videosData.items?.map((v: any) => v.guid));
       return null;
     }
     
-    console.log('Found movie via fallback:', movie.title || movie.name || movie.originalFilename);
+    console.log('Found movie:', movie.title || movie.name || movie.originalFilename);
     return movie;
   } catch (error) {
-    console.error('Error in fallback:', error);
-    return null;
-  }
-}
-
-async function getTMDBMovieData(movieId: string) {
-  try {
-    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
-    
-    const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&language=pt-BR`, {
-      next: { revalidate: 3600 }
-    });
-    
-    if (!movieRes.ok) return null;
-    
-    return movieRes.json();
-  } catch (error) {
+    console.error('Error fetching movie data:', error);
     return null;
   }
 }
