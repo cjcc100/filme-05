@@ -298,7 +298,8 @@ export default async function Home() {
               console.log('Rendering movie card:', {
                 guid: movie.guid,
                 title: movie.title || movie.name || movie.originalFilename,
-                isBunny
+                isBunny,
+                linkUrl: isBunny && movie.guid ? `/movie/${movie.guid}` : '#'
               });
               
               // Prioridade: TMDb data -> Bunny thumbnail -> TMDb fallback
@@ -317,10 +318,12 @@ export default async function Home() {
               const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || (movie.length ? `${Math.floor(movie.length / 60)}:${(movie.length % 60).toString().padStart(2, '0')}` : 'N/A');
               const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
 
+              const movieLink = isBunny && movie.guid ? `/movie/${movie.guid}` : '#';
+
               return (
                 <Link
                   key={movie.guid || movie.id}
-                  href={isBunny && movie.guid ? `/movie/${movie.guid}` : `#`}
+                  href={movieLink}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >
                   <div className="relative aspect-[2/3] overflow-hidden">

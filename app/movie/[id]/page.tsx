@@ -132,10 +132,15 @@ async function searchTMDBMovie(query: string) {
 
 export default async function MoviePage({ params }: { params: { id: string } }) {
   console.log('MoviePage called with GUID:', params.id);
+  console.log('Full params:', params);
+  
   const movieData = await getMovieData(params.id);
   
   // Se não tiver dados do Bunny, usa o GUID da URL
   const movieGuid = movieData?.guid || params.id;
+  
+  console.log('MovieData:', movieData);
+  console.log('Using GUID for player:', movieGuid);
   
   // Buscar automaticamente no TMDb pelo nome do arquivo
   const movieName = movieData?.title || movieData?.name || movieData?.originalFilename || '';
