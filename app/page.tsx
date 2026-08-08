@@ -135,7 +135,9 @@ export default async function Home() {
         // Garantir que temos pelo menos os dados do Bunny disponíveis
         title: movie.title || movie.name || movie.originalFilename || 'Sem título',
         description: movie.description || movie.overview || 'Sem descrição',
-        thumbnailUrl: movie.thumbnailUrl || movie.thumbnail || movie.posterUrl
+        thumbnailUrl: movie.thumbnailUrl || movie.thumbnail || movie.posterUrl,
+        // Garantir que o GUID está presente
+        guid: movie.guid
       };
     })
   );
