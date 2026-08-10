@@ -161,7 +161,7 @@ export default function MovieClient({ movieData, fileId }: MovieClientProps) {
                     {fileId ? (
                       <button 
                         onClick={() => setShowPlayer(true)}
-                        className="bg-white text-black px-8 py-3 rounded-lg font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2"
+                        className="bg-gradient-to-r from-red-600 to-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-orange-600 transition-all duration-300 flex items-center gap-2 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"
                       >
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>

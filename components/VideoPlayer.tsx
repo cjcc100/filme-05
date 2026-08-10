@@ -14,6 +14,23 @@ export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
     setIsVisible(true);
   }, []);
 
+  // Fechar com tecla ESC
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isVisible) {
+        handleClose();
+      }
+    };
+
+    if (isVisible) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isVisible]);
+
   const handleClose = () => {
     setIsVisible(false);
     setTimeout(() => onClose(), 300);
@@ -33,12 +50,12 @@ export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative w-full max-w-6xl mx-4">
-          {/* Close Button */}
+          {/* Close Button - Agora dentro do container */}
           <button
             onClick={handleClose}
-            className="absolute -top-12 right-0 text-white hover:text-red-500 transition-colors z-10"
+            className="absolute -top-14 right-0 bg-red-600 hover:bg-red-700 text-white w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 z-20 shadow-lg hover:shadow-red-500/50 hover:scale-110"
           >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
