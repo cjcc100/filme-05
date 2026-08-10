@@ -24,7 +24,7 @@ async function getStreamtapeFiles() {
     const streamtapeLogin = '4db68bae5deec46b3a4b';
     const streamtapeKey = 'a7azDDb68ACx8dP';
     
-    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=`, {
+    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}`, {
       headers: {
         'Accept': 'application/json',
       },

@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
       url = new URL(`${config.streamtape.apiUrl}/file/listfolder`);
       url.searchParams.append('login', config.streamtape.login);
       url.searchParams.append('key', config.streamtape.key);
-      url.searchParams.append('folder', folderId || ''); // vazio para root folder
+      if (folderId) {
+        url.searchParams.append('folder', folderId);
+      }
       console.log('Streamtape API - Fetching files:', url.toString());
     } else if (action === 'file' && fileId) {
       // Obter detalhes de um arquivo específico
