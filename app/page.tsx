@@ -19,32 +19,24 @@ async function getTmdbData() {
   }
 }
 
-async function getStreamtapeMovies() {
+async function getStreamtapeFiles() {
   try {
-    const login = process.env.STREAMTAPE_LOGIN || '';
-    const key = process.env.STREAMTAPE_KEY || '';
+    const streamtapeLogin = '4db68bae5deec46b3a4b';
+    const streamtapeKey = 'a7azDDb68ACx8dP';
     
-    if (!login || !key) {
-      console.error('Streamtape credentials not configured');
-      return null;
-    }
-    
-    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${login}&key=${key}`, {
+    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=`, {
+      headers: {
+        'Accept': 'application/json',
+      },
       next: { revalidate: 1800 }
     });
-    
     if (!res.ok) return null;
     
     const data = await res.json();
+    if (data.status !== 200 || !data.result?.files) return null;
     
-    if (data.status !== 200) {
-      console.error('Streamtape API error:', data.msg);
-      return null;
-    }
-    
-    return data;
+    return data.result;
   } catch (error) {
-    console.error('Error fetching Streamtape movies:', error);
     return null;
   }
 }
@@ -82,36 +74,30 @@ async function searchTMDBMovie(query: string) {
 
 export default async function Home() {
   const tmdbData = await getTmdbData();
-  const streamtapeData = await getStreamtapeMovies();
-  const standaloneMovies = streamtapeData?.result?.files || [];
+  const streamtapeData = await getStreamtapeFiles();
+  
+  // Usar arquivos do Streamtape
+  const files = streamtapeData?.files || [];
     
-  // Enriquecer filmes com dados TMDb
-  const enrichedMovies = await Promise.all(
-    standaloneMovies.map(async (movie: any) => {
-      const movieName = movie.name || movie.title || movie.originalFilename || '';
-      const tmdbData = movieName ? await searchTMDBMovie(movieName) : null;
+  // Enriquecer arquivos com dados TMDb
+  const enrichedFiles = await Promise.all(
+    files.map(async (file: any) => {
+      const fileName = file.name || '';
+      const tmdbData = fileName ? await searchTMDBMovie(fileName) : null;
       
       return {
-        ...movie,
+        ...file,
         tmdbData,
-        title: tmdbData?.title || movie.title || movie.name || movie.originalFilename || 'Sem título',
-        description: tmdbData?.overview || movie.description || movie.overview || 'Sem descrição',
-        thumbnailUrl: movie.thumbnailUrl,
-        guid: movie.linkid,
-        tmdbId: tmdbData?.id || null
+        title: tmdbData?.title || file.name || 'Sem título',
+        description: tmdbData?.overview || 'Sem descrição',
+        linkid: file.linkid
       };
     })
   );
   
-  // Usar filmes enriquecidos se disponíveis, senão usar TMDb como fallback
-  const movies = (enrichedMovies.length > 0) ? enrichedMovies : (tmdbData?.results?.slice(0, 20) || []);
+  // Usar arquivos enriquecidos do Streamtape se disponíveis, senão usar TMDb como fallback
+  const movies = (enrichedFiles.length > 0) ? enrichedFiles : (tmdbData?.results?.slice(0, 20) || []);
   const featuredMovies = movies.slice(0, 5);
-  
-  // Debug: mostrar quantos filmes foram encontrados
-  console.log('Standalone movies:', standaloneMovies.length);
-  console.log('Enriched movies:', enrichedMovies.length);
-  console.log('Total movies:', movies.length);
-  console.log('Standalone movie GUIDs:', standaloneMovies.map((m: any) => ({ guid: m.guid, title: m.title, collectionId: m.collectionId })));
   
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -144,6 +130,7 @@ export default async function Home() {
           <h2 className="text-2xl font-bold text-white mb-8">Filmes Populares</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {movies.map((movie: any) => {
+              const isStreamtape = movie.linkid;
               const tmdbData = movie.tmdbData;
               
               const imageUrl = tmdbData?.poster_path
@@ -152,16 +139,16 @@ export default async function Home() {
                 ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                 : null;
               
-              const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || movie.originalFilename || 'Sem título';
+              const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || 'Sem título';
               const year = tmdbData?.release_date?.split('-')[0] || movie.release_date?.split('-')[0] || movie.year || 'N/A';
-              const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || (movie.length ? `${Math.floor(movie.length / 60)}:${(movie.length % 60).toString().padStart(2, '0')}` : 'N/A');
+              const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || 'N/A';
               const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
 
-              const movieLink = tmdbData?.id ? `/movie/${tmdbData.id}` : '#';
+              const movieLink = movie.linkid ? `/movie/${movie.linkid}` : (tmdbData?.id ? `/movie/${tmdbData.id}` : '#');
 
               return (
                 <Link
-                  key={movie.tmdbId || movie.id}
+                  key={movie.linkid || movie.id}
                   href={movieLink}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >

@@ -1,33 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 
-async function getBunnyCollection(collectionId: string) {
+async function getStreamtapeFolder(folderId: string) {
   try {
-    const res = await fetch(`https://video.bunnycdn.com/library/722927/collections/${collectionId}`, {
+    const streamtapeLogin = '4db68bae5deec46b3a4b';
+    const streamtapeKey = 'a7azDDb68ACx8dP';
+    
+    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=${folderId}`, {
       headers: {
         'Accept': 'application/json',
-        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
       },
       next: { revalidate: 1800 }
     });
     if (!res.ok) return null;
-    return res.json();
-  } catch (error) {
-    return null;
-  }
-}
-
-async function getBunnyVideosByCollection(collectionId: string) {
-  try {
-    const res = await fetch(`https://video.bunnycdn.com/library/722927/videos?collection=${collectionId}`, {
-      headers: {
-        'Accept': 'application/json',
-        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
-      },
-      next: { revalidate: 1800 }
-    });
-    if (!res.ok) return null;
-    return res.json();
+    
+    const data = await res.json();
+    if (data.status !== 200 || !data.result) return null;
+    
+    return data.result;
   } catch (error) {
     return null;
   }
@@ -58,41 +48,39 @@ async function getTMDBSeriesData(seriesId: string, seasonNumber: string) {
 
 export default async function CollectionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const collectionId = id;
+  const folderId = id;
   
-  const collectionData = await getBunnyCollection(collectionId);
-  const videosData = await getBunnyVideosByCollection(collectionId);
+  const folderData = await getStreamtapeFolder(folderId);
   
-  // Mapeamento de coleções Bunny para IDs TMDb
-  const collectionMappings: Record<string, { seriesId: string; seasonNumber: string }> = {
-    'f079e325-68b5-4771-8f0d-15bb8929ab58': { seriesId: '4604', seasonNumber: '1' } // Smallville Temporada 1
+  // Mapeamento de pastas Streamtape para IDs TMDb
+  const folderMappings: Record<string, { seriesId: string; seasonNumber: string }> = {
+    // Adicione aqui o mapeamento das suas pastas Streamtape para IDs TMDb
+    // Exemplo: 'folder-id': { seriesId: '4604', seasonNumber: '1' }
   };
   
-  const mapping = collectionMappings[collectionId];
+  const mapping = folderMappings[folderId];
   const tmdbData = mapping ? await getTMDBSeriesData(mapping.seriesId, mapping.seasonNumber) : null;
   const seriesData = tmdbData?.series;
   const seasonData = tmdbData?.season;
   
-  const title = seriesData?.name || collectionData?.name || 'Sem título';
-  const overview = seriesData?.overview || collectionData?.description || 'Sem descrição';
+  const title = seriesData?.name || folderData?.folders?.[0]?.name || 'Sem título';
+  const overview = seriesData?.overview || 'Sem descrição';
   const posterUrl = seriesData?.poster_path
     ? `https://image.tmdb.org/t/p/w500${seriesData.poster_path}`
-    : collectionData?.posterUrl
-    ? collectionData.posterUrl
     : null;
   const backdropUrl = seriesData?.backdrop_path
     ? `https://image.tmdb.org/t/p/original${seriesData.backdrop_path}`
     : null;
   
-  const episodes = videosData?.items || [];
+  const episodes = folderData?.files || [];
   
   // Enriquecer episódios com dados do TMDb
-  const enrichedEpisodes = episodes.map((video: any) => {
-    const videoTitle = video.title || video.name || video.originalFilename || '';
+  const enrichedEpisodes = episodes.map((file: any) => {
+    const fileName = file.name || '';
     
     // Tentar extrair número do episódio do nome do arquivo (ex: "1x01" -> episodio 1)
     let episodeNumber = 1;
-    const match = videoTitle.match(/(\d+)x(\d+)/i);
+    const match = fileName.match(/(\d+)x(\d+)/i);
     if (match) {
       episodeNumber = parseInt(match[2]);
     }
@@ -101,13 +89,13 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     const tmdbEpisode = seasonData?.episodes?.find((ep: any) => ep.episode_number === episodeNumber);
     
     return {
-      ...video,
+      ...file,
       tmdbEpisode,
-      title: tmdbEpisode?.name || videoTitle,
-      overview: tmdbEpisode?.overview || video.description || 'Sem descrição',
+      title: tmdbEpisode?.name || fileName,
+      overview: tmdbEpisode?.overview || 'Sem descrição',
       stillUrl: tmdbEpisode?.still_path
         ? `https://image.tmdb.org/t/p/w500${tmdbEpisode.still_path}`
-        : video.thumbnailUrl || (video.guid ? `https://vz-c3b5c7e8-b89.b-cdn.net/${video.guid}/thumbnail.jpg` : null),
+        : null,
       episodeNumber: tmdbEpisode?.episode_number || episodeNumber,
       seasonNumber: tmdbEpisode?.season_number || 1
     };
@@ -194,8 +182,8 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
               
               return (
                 <Link
-                  key={video.guid}
-                  href={`/movie/${video.guid}`}
+                  key={video.linkid}
+                  href={`/movie/${video.linkid}`}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >
                   <div className="relative aspect-video overflow-hidden">

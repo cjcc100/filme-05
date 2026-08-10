@@ -41,10 +41,10 @@ interface MovieData {
 
 interface MovieClientProps {
   movieData: MovieData;
-  bunnyGuid: string | null;
+  fileId: string | null;
 }
 
-export default function MovieClient({ movieData, bunnyGuid }: MovieClientProps) {
+export default function MovieClient({ movieData, fileId }: MovieClientProps) {
   const [showPlayer, setShowPlayer] = useState(false);
 
   if (!movieData) return null;
@@ -69,9 +69,9 @@ export default function MovieClient({ movieData, bunnyGuid }: MovieClientProps) 
 
   return (
     <>
-      {showPlayer && bunnyGuid && (
+      {showPlayer && fileId && (
         <VideoPlayer 
-          videoGuid={bunnyGuid} 
+          fileId={fileId} 
           onClose={() => setShowPlayer(false)} 
         />
       )}
@@ -158,7 +158,7 @@ export default function MovieClient({ movieData, bunnyGuid }: MovieClientProps) 
                   </div>
                   
                   <div className="flex gap-4">
-                    {bunnyGuid ? (
+                    {fileId ? (
                       <button 
                         onClick={() => setShowPlayer(true)}
                         className="bg-white text-black px-8 py-3 rounded-lg font-semibold hover:bg-zinc-200 transition-colors flex items-center gap-2"

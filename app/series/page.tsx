@@ -1,17 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 
-async function getBunnyCollections() {
+async function getStreamtapeFolders() {
   try {
-    const res = await fetch('https://video.bunnycdn.com/library/722927/collections?page=1&itemsPerPage=100', {
+    const streamtapeLogin = '4db68bae5deec46b3a4b';
+    const streamtapeKey = 'a7azDDb68ACx8dP';
+    
+    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=`, {
       headers: {
         'Accept': 'application/json',
-        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
       },
       next: { revalidate: 1800 }
     });
     if (!res.ok) return null;
-    return res.json();
+    
+    const data = await res.json();
+    if (data.status !== 200 || !data.result?.folders) return null;
+    
+    return data.result;
   } catch (error) {
     return null;
   }
@@ -41,26 +47,27 @@ async function getTMDBSeriesData(seriesId: string, seasonNumber: string) {
 }
 
 export default async function SeriesPage() {
-  const bunnyCollections = await getBunnyCollections();
+  const streamtapeData = await getStreamtapeFolders();
   
-  // Mapeamento de coleções Bunny para IDs TMDb
-  const collectionMappings: Record<string, { seriesId: string; seasonNumber: string }> = {
-    'f079e325-68b5-4771-8f0d-15bb8929ab58': { seriesId: '4604', seasonNumber: '1' } // Smallville Temporada 1
+  // Mapeamento de pastas Streamtape para IDs TMDb
+  const folderMappings: Record<string, { seriesId: string; seasonNumber: string }> = {
+    // Adicione aqui o mapeamento das suas pastas Streamtape para IDs TMDb
+    // Exemplo: 'folder-id': { seriesId: '4604', seasonNumber: '1' }
   };
   
-  // Enriquecer coleções com dados TMDb
-  const enrichedCollections = await Promise.all(
-    (bunnyCollections?.items?.slice(0, 8) || []).map(async (collection: any) => {
-      const mapping = collectionMappings[collection.guid];
+  // Enriquecer pastas com dados TMDb
+  const enrichedFolders = await Promise.all(
+    (streamtapeData?.folders?.slice(0, 8) || []).map(async (folder: any) => {
+      const mapping = folderMappings[folder.id];
       const tmdbData = mapping ? await getTMDBSeriesData(mapping.seriesId, mapping.seasonNumber) : null;
       return {
-        ...collection,
+        ...folder,
         tmdbData
       };
     })
   );
   
-  const series = enrichedCollections;
+  const series = enrichedFolders;
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -91,8 +98,8 @@ export default async function SeriesPage() {
           <h1 className="text-3xl font-bold text-white mb-8">Séries Populares</h1>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {series.map((collection: any) => {
-              const tmdbData = collection.tmdbData;
+            {series.map((folder: any) => {
+              const tmdbData = folder.tmdbData;
               const seriesData = tmdbData?.series;
               
               const imageUrl = seriesData?.poster_path
@@ -101,15 +108,15 @@ export default async function SeriesPage() {
                 ? `https://image.tmdb.org/t/p/w500${seriesData.backdrop_path}`
                 : null;
               
-              const title = seriesData?.name || collection.name || 'Sem título';
+              const title = seriesData?.name || folder.name || 'Sem título';
               const year = seriesData?.first_air_date?.split('-')[0] || 'N/A';
               const rating = seriesData?.vote_average?.toFixed(1) || 'N/A';
               const overview = seriesData?.overview || 'Sem descrição';
 
               return (
                 <Link
-                  key={collection.guid}
-                  href={`/collection/${collection.guid}`}
+                  key={folder.id}
+                  href={`/collection/${folder.id}`}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >
                   <div className="relative aspect-[2/3] overflow-hidden">

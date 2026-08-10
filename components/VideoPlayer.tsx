@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 
 interface VideoPlayerProps {
-  videoGuid: string;
-  libraryId?: string;
+  fileId: string;
   onClose: () => void;
 }
 
-export default function VideoPlayer({ videoGuid, libraryId = '722927', onClose }: VideoPlayerProps) {
+export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -47,7 +46,7 @@ export default function VideoPlayer({ videoGuid, libraryId = '722927', onClose }
           {/* Video Container */}
           <div style={{ position: 'relative', paddingTop: '56.25%' }}>
             <iframe
-              src={`https://player.mediadelivery.net/embed/${libraryId}/${videoGuid}?autoplay=true`}
+              src={`https://streamtape.com/e/${fileId}?autoplay=true`}
               loading="lazy"
               style={{
                 border: 'none',

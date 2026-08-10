@@ -61,15 +61,11 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
   const currentMovie = movies[currentIndex];
   const tmdbData = currentMovie?.tmdbData;
   
-  // Prioridade: TMDb backdrop -> TMDb poster -> Bunny thumbnailUrl -> Bunny CDN fallback
+  // Prioridade: TMDb backdrop -> TMDb poster
   const imageUrl = tmdbData?.backdrop_path
     ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}`
     : tmdbData?.poster_path
     ? `https://image.tmdb.org/t/p/original${tmdbData.poster_path}`
-    : currentMovie?.thumbnailUrl || currentMovie?.thumbnail || currentMovie?.posterUrl
-    ? (currentMovie.thumbnailUrl || currentMovie.thumbnail || currentMovie.posterUrl)
-    : currentMovie?.guid
-    ? `https://vz-c3b5c7e8-b89.b-cdn.net/${currentMovie.guid}/thumbnail.jpg`
     : null;
 
   const title = tmdbData?.title || tmdbData?.name || currentMovie?.title || currentMovie?.name || currentMovie?.originalFilename || 'Sem título';
@@ -89,10 +85,6 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
             ? `https://image.tmdb.org/t/p/original${movieTmdbData.backdrop_path}`
             : movieTmdbData?.poster_path
             ? `https://image.tmdb.org/t/p/original${movieTmdbData.poster_path}`
-            : movie?.thumbnailUrl || movie?.thumbnail || movie?.posterUrl
-            ? (movie.thumbnailUrl || movie.thumbnail || movie.posterUrl)
-            : movie?.guid
-            ? `https://vz-c3b5c7e8-b89.b-cdn.net/${movie.guid}/thumbnail.jpg`
             : null;
 
           return (

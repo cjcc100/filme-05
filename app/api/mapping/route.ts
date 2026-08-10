@@ -1,47 +1,26 @@
 export async function GET() {
   try {
-    const useStreamtape = process.env.USE_STREAMTAPE === 'true';
+    // Buscar arquivos do Streamtape
+    const streamtapeLogin = '4db68bae5deec46b3a4b';
+    const streamtapeKey = 'a7azDDb68ACx8dP';
     
-    let videos: any[] = [];
-    
-    if (useStreamtape) {
-      // Buscar arquivos do Streamtape
-      const login = process.env.STREAMTAPE_LOGIN || '';
-      const key = process.env.STREAMTAPE_KEY || '';
-      
-      if (!login || !key) {
-        throw new Error('Streamtape credentials not configured');
-      }
-      
-      const streamtapeRes = await fetch(`https://api.streamtape.com/file/listfolder?login=${login}&key=${key}`);
+    const streamtapeRes = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
 
-      if (!streamtapeRes.ok) {
-        throw new Error('Failed to fetch Streamtape files');
-      }
-
-      const streamtapeData = await streamtapeRes.json();
-      
-      if (streamtapeData.status !== 200) {
-        throw new Error(`Streamtape API error: ${streamtapeData.msg}`);
-      }
-      
-      videos = streamtapeData.result?.files || [];
-    } else {
-      // Buscar vídeos do Bunny CDN
-      const bunnyRes = await fetch('https://video.bunnycdn.com/library/722927/videos', {
-        headers: {
-          'Accept': 'application/json',
-          'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
-        },
-      });
-
-      if (!bunnyRes.ok) {
-        throw new Error('Failed to fetch Bunny videos');
-      }
-
-      const bunnyData = await bunnyRes.json();
-      videos = bunnyData.items || [];
+    if (!streamtapeRes.ok) {
+      throw new Error('Failed to fetch Streamtape files');
     }
+
+    const streamtapeData = await streamtapeRes.json();
+    
+    if (streamtapeData.status !== 200 || !streamtapeData.result?.files) {
+      throw new Error('Invalid Streamtape response');
+    }
+    
+    const files = streamtapeData.result.files || [];
 
     // Função para limpar nome do arquivo
     function cleanFileName(filename: string): string {
@@ -54,15 +33,12 @@ export async function GET() {
         .toLowerCase();
     }
 
-    // Buscar no TMDb para cada vídeo
+    // Buscar no TMDb para cada arquivo
     const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
     const mapping: Record<string, string> = {};
 
-    for (const video of videos) {
-      // Pular vídeos que são parte de coleções (séries) no Bunny
-      if (!useStreamtape && video.collectionId) continue;
-
-      const fileName = video.name || video.title || video.originalFilename || '';
+    for (const file of files) {
+      const fileName = file.name || '';
       if (!fileName) continue;
 
       const cleanName = cleanFileName(fileName);
@@ -78,10 +54,8 @@ export async function GET() {
           const searchData = await searchRes.json();
           if (searchData.results && searchData.results.length > 0) {
             const tmdbId = searchData.results[0].id.toString();
-            // Usar linkid do Streamtape ou guid do Bunny
-            const videoId = useStreamtape ? video.linkid : video.guid;
-            mapping[tmdbId] = videoId;
-            console.log(`Mapped: ${fileName} -> TMDb ID: ${tmdbId}, Video ID: ${videoId}`);
+            mapping[tmdbId] = file.linkid;
+            console.log(`Mapped: ${fileName} -> TMDb ID: ${tmdbId}, Streamtape File ID: ${file.linkid}`);
           }
         }
       } catch (error) {
@@ -89,7 +63,7 @@ export async function GET() {
       }
     }
 
-    return Response.json({ mapping, useStreamtape });
+    return Response.json({ mapping });
   } catch (error) {
     console.error('Error creating mapping:', error);
     return Response.json({ error: 'Failed to create mapping' }, { status: 500 });

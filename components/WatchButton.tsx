@@ -34,9 +34,6 @@ export default function WatchButton({ videoId }: WatchButtonProps) {
     };
   }, [showPlayer]);
 
-  // URL do player Streamtape
-  const playerUrl = `https://streamtape.com/e/${videoId}`;
-
   return (
     <>
       <button 
@@ -60,7 +57,7 @@ export default function WatchButton({ videoId }: WatchButtonProps) {
           >
             <div className="relative w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden">
               <iframe
-                src={playerUrl}
+                src={`https://streamtape.com/e/${videoId}`}
                 className="absolute inset-0 w-full h-full"
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
