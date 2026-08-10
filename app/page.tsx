@@ -19,22 +19,6 @@ async function getTmdbData() {
   }
 }
 
-async function getBunnyMovies() {
-  try {
-    const res = await fetch('https://video.bunnycdn.com/library/722927/videos', {
-      headers: {
-        'Accept': 'application/json',
-        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
-      },
-      next: { revalidate: 1800 }
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch (error) {
-    return null;
-  }
-}
-
 async function getStreamtapeMovies() {
   try {
     const login = process.env.STREAMTAPE_LOGIN || '';
@@ -98,22 +82,8 @@ async function searchTMDBMovie(query: string) {
 
 export default async function Home() {
   const tmdbData = await getTmdbData();
-  const useStreamtape = process.env.USE_STREAMTAPE === 'true';
-  
-  let standaloneMovies: any[] = [];
-  
-  if (useStreamtape) {
-    const streamtapeData = await getStreamtapeMovies();
-    standaloneMovies = streamtapeData?.result?.files || [];
-  } else {
-    const bunnyMovies = await getBunnyMovies();
-    
-    // Filtrar vídeos sem coleção (filmes uploadados)
-    standaloneMovies = bunnyMovies?.items?.filter((video: any) => {
-      // Verificar se NÃO tem collectionId ou se collectionId é null/undefined/vazio
-      return !video.collectionId || video.collectionId === '' || video.collectionId === null || video.collectionId === undefined;
-    }) || [];
-  }
+  const streamtapeData = await getStreamtapeMovies();
+  const standaloneMovies = streamtapeData?.result?.files || [];
     
   // Enriquecer filmes com dados TMDb
   const enrichedMovies = await Promise.all(
@@ -127,7 +97,8 @@ export default async function Home() {
         title: tmdbData?.title || movie.title || movie.name || movie.originalFilename || 'Sem título',
         description: tmdbData?.overview || movie.description || movie.overview || 'Sem descrição',
         thumbnailUrl: movie.thumbnailUrl,
-        guid: useStreamtape ? movie.linkid : movie.guid
+        guid: movie.linkid,
+        tmdbId: tmdbData?.id || null
       };
     })
   );
@@ -173,15 +144,10 @@ export default async function Home() {
           <h2 className="text-2xl font-bold text-white mb-8">Filmes Populares</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {movies.map((movie: any) => {
-              const isBunny = movie.guid;
               const tmdbData = movie.tmdbData;
               
               const imageUrl = tmdbData?.poster_path
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
-                : isBunny && (movie.thumbnailUrl || movie.thumbnail || movie.posterUrl)
-                ? (movie.thumbnailUrl || movie.thumbnail || movie.posterUrl)
-                : isBunny && movie.guid
-                ? `https://vz-c3b5c7e8-b89.b-cdn.net/${movie.guid}/thumbnail.jpg`
                 : movie.poster_path
                 ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                 : null;
@@ -191,11 +157,11 @@ export default async function Home() {
               const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || (movie.length ? `${Math.floor(movie.length / 60)}:${(movie.length % 60).toString().padStart(2, '0')}` : 'N/A');
               const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
 
-              const movieLink = movie.guid ? `/movie/${movie.guid}` : (tmdbData?.id ? `/movie/${tmdbData.id}` : '#');
+              const movieLink = tmdbData?.id ? `/movie/${tmdbData.id}` : '#';
 
               return (
                 <Link
-                  key={movie.guid || movie.id}
+                  key={movie.tmdbId || movie.id}
                   href={movieLink}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >

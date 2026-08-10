@@ -4,10 +4,9 @@ import { useState, useEffect } from 'react';
 
 interface WatchButtonProps {
   videoId: string;
-  useStreamtape?: boolean;
 }
 
-export default function WatchButton({ videoId, useStreamtape = true }: WatchButtonProps) {
+export default function WatchButton({ videoId }: WatchButtonProps) {
   const [showPlayer, setShowPlayer] = useState(false);
 
   const handleWatch = () => {
@@ -35,13 +34,8 @@ export default function WatchButton({ videoId, useStreamtape = true }: WatchButt
     };
   }, [showPlayer]);
 
-  // Determinar URL do player baseado no serviço
-  const getPlayerUrl = () => {
-    if (useStreamtape) {
-      return `https://streamtape.com/e/${videoId}`;
-    }
-    return `https://iframe.mediadelivery.net/embed/722927/${videoId}`;
-  };
+  // URL do player Streamtape
+  const playerUrl = `https://streamtape.com/e/${videoId}`;
 
   return (
     <>
@@ -66,7 +60,7 @@ export default function WatchButton({ videoId, useStreamtape = true }: WatchButt
           >
             <div className="relative w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden">
               <iframe
-                src={getPlayerUrl()}
+                src={playerUrl}
                 className="absolute inset-0 w-full h-full"
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
