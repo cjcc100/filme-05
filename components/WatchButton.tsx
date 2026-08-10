@@ -7,7 +7,7 @@ interface WatchButtonProps {
   useStreamtape?: boolean;
 }
 
-export default function WatchButton({ videoId, useStreamtape = false }: WatchButtonProps) {
+export default function WatchButton({ videoId, useStreamtape = true }: WatchButtonProps) {
   const [showPlayer, setShowPlayer] = useState(false);
 
   const handleWatch = () => {
