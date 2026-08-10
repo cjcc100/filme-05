@@ -35,6 +35,36 @@ async function getBunnyMovies() {
   }
 }
 
+async function getStreamtapeMovies() {
+  try {
+    const login = process.env.STREAMTAPE_LOGIN || '';
+    const key = process.env.STREAMTAPE_KEY || '';
+    
+    if (!login || !key) {
+      console.error('Streamtape credentials not configured');
+      return null;
+    }
+    
+    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${login}&key=${key}`, {
+      next: { revalidate: 1800 }
+    });
+    
+    if (!res.ok) return null;
+    
+    const data = await res.json();
+    
+    if (data.status !== 200) {
+      console.error('Streamtape API error:', data.msg);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching Streamtape movies:', error);
+    return null;
+  }
+}
+
 async function searchTMDBMovie(query: string) {
   try {
     const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
@@ -68,18 +98,27 @@ async function searchTMDBMovie(query: string) {
 
 export default async function Home() {
   const tmdbData = await getTmdbData();
-  const bunnyMovies = await getBunnyMovies();
+  const useStreamtape = process.env.USE_STREAMTAPE === 'true';
   
-  // Filtrar vídeos sem coleção (filmes uploadados)
-  const standaloneMovies = bunnyMovies?.items?.filter((video: any) => {
-    // Verificar se NÃO tem collectionId ou se collectionId é null/undefined/vazio
-    return !video.collectionId || video.collectionId === '' || video.collectionId === null || video.collectionId === undefined;
-  }) || [];
+  let standaloneMovies: any[] = [];
+  
+  if (useStreamtape) {
+    const streamtapeData = await getStreamtapeMovies();
+    standaloneMovies = streamtapeData?.result?.files || [];
+  } else {
+    const bunnyMovies = await getBunnyMovies();
+    
+    // Filtrar vídeos sem coleção (filmes uploadados)
+    standaloneMovies = bunnyMovies?.items?.filter((video: any) => {
+      // Verificar se NÃO tem collectionId ou se collectionId é null/undefined/vazio
+      return !video.collectionId || video.collectionId === '' || video.collectionId === null || video.collectionId === undefined;
+    }) || [];
+  }
     
   // Enriquecer filmes com dados TMDb
   const enrichedMovies = await Promise.all(
     standaloneMovies.map(async (movie: any) => {
-      const movieName = movie.title || movie.name || movie.originalFilename || '';
+      const movieName = movie.name || movie.title || movie.originalFilename || '';
       const tmdbData = movieName ? await searchTMDBMovie(movieName) : null;
       
       return {
@@ -88,12 +127,12 @@ export default async function Home() {
         title: tmdbData?.title || movie.title || movie.name || movie.originalFilename || 'Sem título',
         description: tmdbData?.overview || movie.description || movie.overview || 'Sem descrição',
         thumbnailUrl: movie.thumbnailUrl,
-        guid: movie.guid
+        guid: useStreamtape ? movie.linkid : movie.guid
       };
     })
   );
   
-  // Usar filmes enriquecidos do Bunny se disponíveis, senão usar TMDb como fallback
+  // Usar filmes enriquecidos se disponíveis, senão usar TMDb como fallback
   const movies = (enrichedMovies.length > 0) ? enrichedMovies : (tmdbData?.results?.slice(0, 20) || []);
   const featuredMovies = movies.slice(0, 5);
   

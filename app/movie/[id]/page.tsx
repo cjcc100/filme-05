@@ -185,6 +185,61 @@ async function getBunnyVideoId(movieTitle: string): Promise<string | null> {
   }
 }
 
+async function getStreamtapeFiles(): Promise<any[] | null> {
+  try {
+    const login = process.env.STREAMTAPE_LOGIN || '';
+    const key = process.env.STREAMTAPE_KEY || '';
+    
+    if (!login || !key) {
+      console.error('Streamtape credentials not configured');
+      return null;
+    }
+    
+    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${login}&key=${key}`, {
+      next: { revalidate: 1800 }
+    });
+    
+    if (!res.ok) {
+      console.error('Streamtape API error:', res.status);
+      return null;
+    }
+    
+    const data = await res.json();
+    
+    if (data.status !== 200) {
+      console.error('Streamtape API error:', data.msg);
+      return null;
+    }
+    
+    return data.result?.files || [];
+  } catch (error) {
+    console.error('Error fetching Streamtape files:', error);
+    return null;
+  }
+}
+
+async function getStreamtapeFileId(movieTitle: string): Promise<string | null> {
+  try {
+    const files = await getStreamtapeFiles();
+    
+    if (!files || files.length === 0) {
+      return null;
+    }
+    
+    // Buscar arquivo correspondente pelo título
+    const file = files.find((f: any) => {
+      const fileName = (f.name || '').toLowerCase();
+      const searchTerm = movieTitle.toLowerCase();
+      return fileName.includes(searchTerm) || searchTerm.includes(fileName);
+    });
+    
+    return file?.linkid || null;
+  } catch (error) {
+    console.error('Error fetching Streamtape file ID:', error);
+    return null;
+  }
+}
+
 // Video ID de teste para você poder testar
 const TEST_VIDEO_ID = '0ff90959-d053-463f-9e92-a61e43e52ae1';
 
@@ -203,6 +258,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   let movieData: MovieData | null = null;
   let bunnyVideoData: any | null = null;
   let finalVideoId: string | null = null;
+  let useStreamtape = process.env.USE_STREAMTAPE === 'true';
   
   if (isBunnyGuid) {
     // Se for GUID do Bunny, buscar dados do vídeo direto
@@ -268,10 +324,18 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
     // Se for ID do TMDb, buscar dados do filme
     movieData = await getMovieData(movieId);
     
-    // Buscar videoId do Bunny CDN baseado no título do filme
+    // Buscar videoId baseado no título do filme
     const movieTitle = movieData?.title || movieData?.original_title || '';
-    const bunnyVideoId = await getBunnyVideoId(movieTitle);
-    finalVideoId = bunnyVideoId;
+    
+    if (useStreamtape) {
+      // Buscar do Streamtape
+      const streamtapeFileId = await getStreamtapeFileId(movieTitle);
+      finalVideoId = streamtapeFileId;
+    } else {
+      // Buscar do Bunny CDN
+      const bunnyVideoId = await getBunnyVideoId(movieTitle);
+      finalVideoId = bunnyVideoId;
+    }
   }
   
   // Para teste, usar videoId fixo se não encontrar
@@ -435,7 +499,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
                 </div>
                 
                 <div className="flex gap-4">
-                  <WatchButton videoId={finalVideoId} />
+                  <WatchButton videoId={finalVideoId} useStreamtape={useStreamtape} />
                   
                   <button className="bg-zinc-600/80 text-white px-8 py-3 rounded-lg font-semibold hover:bg-zinc-600 transition-colors flex items-center gap-2">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

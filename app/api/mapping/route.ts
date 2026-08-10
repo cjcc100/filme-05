@@ -1,19 +1,47 @@
 export async function GET() {
   try {
-    // Buscar vídeos do Bunny CDN
-    const bunnyRes = await fetch('https://video.bunnycdn.com/library/722927/videos', {
-      headers: {
-        'Accept': 'application/json',
-        'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
-      },
-    });
+    const useStreamtape = process.env.USE_STREAMTAPE === 'true';
+    
+    let videos: any[] = [];
+    
+    if (useStreamtape) {
+      // Buscar arquivos do Streamtape
+      const login = process.env.STREAMTAPE_LOGIN || '';
+      const key = process.env.STREAMTAPE_KEY || '';
+      
+      if (!login || !key) {
+        throw new Error('Streamtape credentials not configured');
+      }
+      
+      const streamtapeRes = await fetch(`https://api.streamtape.com/file/listfolder?login=${login}&key=${key}`);
 
-    if (!bunnyRes.ok) {
-      throw new Error('Failed to fetch Bunny videos');
+      if (!streamtapeRes.ok) {
+        throw new Error('Failed to fetch Streamtape files');
+      }
+
+      const streamtapeData = await streamtapeRes.json();
+      
+      if (streamtapeData.status !== 200) {
+        throw new Error(`Streamtape API error: ${streamtapeData.msg}`);
+      }
+      
+      videos = streamtapeData.result?.files || [];
+    } else {
+      // Buscar vídeos do Bunny CDN
+      const bunnyRes = await fetch('https://video.bunnycdn.com/library/722927/videos', {
+        headers: {
+          'Accept': 'application/json',
+          'AccessKey': '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
+        },
+      });
+
+      if (!bunnyRes.ok) {
+        throw new Error('Failed to fetch Bunny videos');
+      }
+
+      const bunnyData = await bunnyRes.json();
+      videos = bunnyData.items || [];
     }
-
-    const bunnyData = await bunnyRes.json();
-    const videos = bunnyData.items || [];
 
     // Função para limpar nome do arquivo
     function cleanFileName(filename: string): string {
@@ -31,9 +59,10 @@ export async function GET() {
     const mapping: Record<string, string> = {};
 
     for (const video of videos) {
-      if (video.collectionId) continue; // Pular vídeos que são parte de coleções (séries)
+      // Pular vídeos que são parte de coleções (séries) no Bunny
+      if (!useStreamtape && video.collectionId) continue;
 
-      const fileName = video.title || video.name || video.originalFilename || '';
+      const fileName = video.name || video.title || video.originalFilename || '';
       if (!fileName) continue;
 
       const cleanName = cleanFileName(fileName);
@@ -49,8 +78,10 @@ export async function GET() {
           const searchData = await searchRes.json();
           if (searchData.results && searchData.results.length > 0) {
             const tmdbId = searchData.results[0].id.toString();
-            mapping[tmdbId] = video.guid;
-            console.log(`Mapped: ${fileName} -> TMDb ID: ${tmdbId}, Bunny GUID: ${video.guid}`);
+            // Usar linkid do Streamtape ou guid do Bunny
+            const videoId = useStreamtape ? video.linkid : video.guid;
+            mapping[tmdbId] = videoId;
+            console.log(`Mapped: ${fileName} -> TMDb ID: ${tmdbId}, Video ID: ${videoId}`);
           }
         }
       } catch (error) {
@@ -58,7 +89,7 @@ export async function GET() {
       }
     }
 
-    return Response.json({ mapping });
+    return Response.json({ mapping, useStreamtape });
   } catch (error) {
     console.error('Error creating mapping:', error);
     return Response.json({ error: 'Failed to create mapping' }, { status: 500 });

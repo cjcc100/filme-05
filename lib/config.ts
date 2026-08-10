@@ -16,4 +16,10 @@ export const config = {
     readOnlyApiKey: process.env.BUNNY_READ_ONLY_API_KEY || '079f4583-e0ea-47dd-bfbeed8904de-2671-47af',
     apiUrl: 'https://video.bunnycdn.com/library',
   },
+  streamtape: {
+    login: process.env.STREAMTAPE_LOGIN || '',
+    key: process.env.STREAMTAPE_KEY || '',
+    apiUrl: 'https://api.streamtape.com',
+    embedUrl: 'https://streamtape.com/e',
+  },
 };
