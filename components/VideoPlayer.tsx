@@ -50,16 +50,6 @@ export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative w-full max-w-6xl mx-4">
-          {/* Close Button - Agora dentro do container */}
-          <button
-            onClick={handleClose}
-            className="absolute -top-14 right-0 bg-red-600 hover:bg-red-700 text-white w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 z-20 shadow-lg hover:shadow-red-500/50 hover:scale-110"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
           {/* Video Container */}
           <div style={{ position: 'relative', paddingTop: '56.25%' }}>
             <iframe
@@ -76,6 +66,17 @@ export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
               allowFullScreen={true}
             />
           </div>
+
+          {/* Close Button - Abaixo do player */}
+          <button
+            onClick={handleClose}
+            className="mt-4 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 mx-auto hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Fechar
+          </button>
         </div>
       </div>
     </div>
