@@ -244,6 +244,6 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <MovieClient movieData={movieData} fileId={finalFileId} />
+    <MovieClient movieData={movieData!} fileId={finalFileId} />
   );
 }
