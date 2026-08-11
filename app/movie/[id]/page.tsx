@@ -60,36 +60,54 @@ async function searchTMDBMovie(query: string): Promise<any | null> {
   try {
     const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
     
-    // Limpar o nome do arquivo de forma mais inteligente
+    // Primeira tentativa: limpeza minimalista
     let cleanQuery = query
-      .replace(/\.[^/.]+$/, '') // Remover extensão apenas
-      .replace(/\s*\(\d{4}\)\s*/g, '') // Remover anos entre parênteses
+      .replace(/\.[^/.]+$/, '') // Apenas remover extensão
       .replace(/[._-]/g, ' ') // Substituir separadores por espaço
       .replace(/\s+/g, ' ') // Remover espaços extras
-      .trim()
-      .toLowerCase();
+      .trim();
     
     if (cleanQuery.length < 3) return null;
     
-    console.log('Searching TMDb for:', cleanQuery, 'from original:', query);
+    console.log('Searching TMDb (attempt 1):', cleanQuery);
     
-    const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
-      next: { revalidate: 600 } // Reduzir cache para 10 minutos
+    let searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
+      next: { revalidate: 600 }
     });
     
-    if (!searchRes.ok) {
-      console.error('TMDb search failed:', searchRes.status);
-      return null;
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      if (searchData.results && searchData.results.length > 0) {
+        console.log('TMDb found (attempt 1):', searchData.results[0].title);
+        return searchData.results[0];
+      }
     }
     
-    const searchData = await searchRes.json();
+    // Segunda tentativa: remover anos e números
+    cleanQuery = query
+      .replace(/\.[^/.]+$/, '')
+      .replace(/\d{4}/g, '') // Remover anos de 4 dígitos
+      .replace(/[._-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     
-    if (searchData.results && searchData.results.length > 0) {
-      console.log('TMDb found:', searchData.results[0].title);
-      return searchData.results[0];
+    if (cleanQuery.length < 3) return null;
+    
+    console.log('Searching TMDb (attempt 2):', cleanQuery);
+    
+    searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
+      next: { revalidate: 600 }
+    });
+    
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      if (searchData.results && searchData.results.length > 0) {
+        console.log('TMDb found (attempt 2):', searchData.results[0].title);
+        return searchData.results[0];
+      }
     }
     
-    console.log('TMDb no results for:', cleanQuery);
+    console.log('TMDb no results for:', query);
     return null;
   } catch (error) {
     console.error('Error searching TMDb:', error);
