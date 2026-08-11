@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MovieClient from "@/components/MovieClient";
+import VideoPlayer from "@/components/VideoPlayer";
 
 interface MovieData {
   id: number;
@@ -136,6 +137,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   
   let movieData: MovieData | null = null;
   let finalFileId: string | null = null;
+  let fileName: string = '';
   
   if (isTmdbId) {
     // Se for ID do TMDb, buscar dados do filme
@@ -162,7 +164,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
       const fileData = data.result?.[movieId];
       
       if (fileData) {
-        const fileName = fileData.name || '';
+        fileName = fileData.name || '';
         const tmdbData = await searchTMDBMovie(fileName);
         if (tmdbData) {
           movieData = await getMovieData(tmdbData.id.toString());
@@ -178,8 +180,41 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
     finalFileId = TEST_FILE_ID;
   }
   
-  // Se não tiver movieData do TMDb, mostrar erro
-  if (!movieData) {
+  // Se for file ID do Streamtape sem dados do TMDb (episódio), mostrar player direto
+  if (!isTmdbId && !movieData) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+        <header className="sticky top-0 z-50 bg-zinc-900/30 backdrop-blur-md border-b border-zinc-800/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">C</span>
+                </div>
+                <span className="text-white font-semibold text-lg">CJCCHUB</span>
+              </Link>
+              <nav className="hidden md:flex items-center gap-6">
+                <Link href="/" className="text-zinc-300 hover:text-white transition-colors">Início</Link>
+                <Link href="/series" className="text-zinc-300 hover:text-white transition-colors">Séries</Link>
+              </nav>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <h1 className="text-3xl font-bold text-white mb-4">{fileName || 'Episódio'}</h1>
+            <p className="text-zinc-400 mb-8">Assista ao episódio diretamente</p>
+            
+            <VideoPlayer fileId={finalFileId} onClose={() => window.location.href = '/'} />
+          </div>
+        </main>
+      </div>
+    );
+  }
+  
+  // Se for ID do TMDb mas não encontrar dados, mostrar erro
+  if (isTmdbId && !movieData) {
     return (
       <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <header className="sticky top-0 z-50 bg-zinc-900/30 backdrop-blur-md border-b border-zinc-800/30">
