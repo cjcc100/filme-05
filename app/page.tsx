@@ -6,19 +6,6 @@ import HeroCarousel from "../components/HeroCarousel";
 // Autor: juniorclaudinei350-sketch
 // Email: juniorclaudinei350@gmail.com
 
-async function getTmdbData() {
-  try {
-    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
-    const res = await fetch(`https://api.themoviedb.org/3/trending/movie/day?api_key=${tmdbApiKey}&language=pt-BR&page=1`, {
-      next: { revalidate: 3600 }
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch (error) {
-    return null;
-  }
-}
-
 async function getStreamtapeFiles() {
   try {
     const streamtapeLogin = '4db68bae5deec46b3a4b';
@@ -103,7 +90,6 @@ async function searchTMDBMovie(query: string) {
 }
 
 export default async function Home() {
-  const tmdbData = await getTmdbData();
   const streamtapeData = await getStreamtapeFiles();
   
   // Usar arquivos do Streamtape
@@ -125,8 +111,8 @@ export default async function Home() {
     })
   );
   
-  // Usar arquivos enriquecidos do Streamtape se disponíveis, senão usar TMDb como fallback
-  const movies = (enrichedFiles.length > 0) ? enrichedFiles : (tmdbData?.results?.slice(0, 20) || []);
+  // SEMPRE usar arquivos do Streamtape, mesmo sem dados TMDb
+  const movies = enrichedFiles;
   const featuredMovies = movies.slice(0, 5);
   
   return (
@@ -165,14 +151,14 @@ export default async function Home() {
               
               const imageUrl = tmdbData?.poster_path
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`
-                : movie.poster_path
-                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                : tmdbData?.backdrop_path
+                ? `https://image.tmdb.org/t/p/w500${tmdbData.backdrop_path}`
                 : null;
               
               const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || 'Sem título';
               const year = tmdbData?.release_date?.split('-')[0] || movie.release_date?.split('-')[0] || movie.year || 'N/A';
               const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || 'N/A';
-              const description = tmdbData?.overview || movie.description || movie.overview || 'Sem descrição';
+              const description = tmdbData?.overview || movie.description || movie.overview || 'Filme disponível para assistir';
 
               const movieLink = movie.linkid ? `/movie/${movie.linkid}` : (tmdbData?.id ? `/movie/${tmdbData.id}` : '#');
 

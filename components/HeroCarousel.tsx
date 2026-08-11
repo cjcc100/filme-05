@@ -61,7 +61,7 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
   const currentMovie = movies[currentIndex];
   const tmdbData = currentMovie?.tmdbData;
   
-  // Prioridade: TMDb backdrop -> TMDb poster
+  // Prioridade: TMDb backdrop -> TMDb poster -> Cor sólida se não tiver
   const imageUrl = tmdbData?.backdrop_path
     ? `https://image.tmdb.org/t/p/original${tmdbData.backdrop_path}`
     : tmdbData?.poster_path
@@ -69,7 +69,7 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
     : null;
 
   const title = tmdbData?.title || tmdbData?.name || currentMovie?.title || currentMovie?.name || currentMovie?.originalFilename || 'Sem título';
-  const overview = tmdbData?.overview || currentMovie?.description || currentMovie?.overview || 'Sem descrição';
+  const overview = tmdbData?.overview || currentMovie?.description || currentMovie?.overview || 'Filme disponível para assistir';
 
   return (
     <section className="relative h-[600px] md:h-[700px] overflow-hidden">
@@ -103,7 +103,7 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
                   priority={isActive}
                 />
               ) : (
-                <div className="w-full h-full bg-zinc-800" />
+                <div className="w-full h-full bg-gradient-to-br from-red-900 via-zinc-800 to-zinc-900" />
               )}
             </div>
           );
