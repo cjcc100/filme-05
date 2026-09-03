@@ -262,7 +262,7 @@ export default async function Home() {
   );
   
   // SEMPRE usar arquivos do Streamtape, mesmo sem dados TMDb
-  const movies = enrichedFiles;
+  const movies = enrichedFiles.reverse(); // Inverter para mostrar mais recentes primeiro
   const featuredMovies = movies.slice(0, 5);
   
   return (
