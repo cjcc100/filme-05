@@ -9,11 +9,9 @@ export const config = {
     baseUrl: 'https://api.themoviedb.org/3',
     imageBaseUrl: 'https://image.tmdb.org/t/p',
   },
-  bunny: {
-    videoLibraryId: process.env.BUNNY_VIDEO_LIBRARY_ID || '722927',
-    cdnHostname: process.env.BUNNY_CDN_HOSTNAME || 'vz-c3b5c7e8-b89.b-cdn.net',
-    apiKey: process.env.BUNNY_API_KEY || '1b6e3939-400b-40eb-98d3945f90fe-85f3-4570',
-    readOnlyApiKey: process.env.BUNNY_READ_ONLY_API_KEY || '079f4583-e0ea-47dd-bfbeed8904de-2671-47af',
-    apiUrl: 'https://video.bunnycdn.com/library',
+  streamtape: {
+    login: process.env.STREAMTAPE_LOGIN || '4db68bae5deec46b3a4b',
+    key: process.env.STREAMTAPE_KEY || 'a7azDDb68ACx8dP',
+    apiUrl: 'https://api.streamtape.com',
   },
 };

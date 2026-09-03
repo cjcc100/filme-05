@@ -11,13 +11,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'vz-c3b5c7e8-b89.b-cdn.net',
+        hostname: 'streamtape.com',
         port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: '**.b-cdn.net',
+        hostname: 'tapecontent.net',
         port: '',
         pathname: '/**',
       },
