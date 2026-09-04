@@ -122,7 +122,8 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     'HdsqTHs6H40': { seriesId: '82452', seasonNumber: '2' }, // Avatar: O Último Mestre do Ar Temporada 2
     'ZMQ2HmOkazs': { seriesId: '254071', seasonNumber: '1' }, // O Roubo (2026)
     'WC8gP0Vw2p4': { seriesId: '198102', seasonNumber: '2' }, // Sequestro (2026) - Temporada 2
-    'E33-JMq_j1U': { seriesId: '198102', seasonNumber: '1' } // Sequestro (2023) - Temporada 1
+    'E33-JMq_j1U': { seriesId: '198102', seasonNumber: '1' }, // Sequestro (2023) - Temporada 1
+    'eGohvpY6AEM': { seriesId: '252193', seasonNumber: '1' }, // Até o Ultimo Samurai - Temporada 1
   };
   
   const mapping = folderMappings[folderId];
