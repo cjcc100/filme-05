@@ -125,6 +125,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     'E33-JMq_j1U': { seriesId: '198102', seasonNumber: '1' }, // Sequestro (2023) - Temporada 1
     'eGohvpY6AEM': { seriesId: '252193', seasonNumber: '1' }, // Até o Ultimo Samurai - Temporada 1
     'IK-L9Qe6-hA': { seriesId: '46125' , seasonNumber: '1' } // O Profeta - Temporada 1
+    'RrUJGjROpto': { seriesId: '223365', seasonNumber: '1' } // Renascer - Temporada 1
   };
   
   const mapping = folderMappings[folderId];
