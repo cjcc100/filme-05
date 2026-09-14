@@ -50,35 +50,52 @@ async function searchTMDBSeries(folderName: string, seasonNumber: number = 1) {
   try {
     const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
     
-    // Função para limpar o nome da pasta
+    // Função melhorada para limpar o nome da pasta
     function cleanFolderName(name: string): string {
       return name
         .replace(/\d{4}/g, '') // Remover anos (2026, etc)
         .replace(/Temporada \d+/gi, '') // Remover "Temporada X"
         .replace(/:.*$/, '') // Remover tudo após dois pontos
         .replace(/\s+/g, ' ') // Remover espaços extras
+        .replace(/[._-]/g, ' ') // Substituir underscores, pontos e hífens por espaços
         .trim();
     }
     
     const cleanName = cleanFolderName(folderName);
     console.log('🔍 Searching TMDb for:', cleanName, 'with season:', seasonNumber);
     
-    const searchRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanName)}`, {
-      next: { revalidate: 600 }
-    });
+    // Tentar múltiplas variações de busca para melhorar a precisão
+    const searchVariations = [
+      cleanName, // Nome limpo completo
+      cleanName.toLowerCase(), // Minúsculas
+      cleanName.split(' ').slice(0, 2).join(' '), // Primeiras 2 palavras
+      cleanName.split(' ')[0], // Primeira palavra apenas
+      folderName, // Nome original
+    ];
     
-    if (searchRes.ok) {
-      const searchData = await searchRes.json();
-      if (searchData.results && searchData.results.length > 0) {
-        const firstResult = searchData.results[0];
-        console.log('✅ Found series:', firstResult.name, 'ID:', firstResult.id);
-        
-        // Buscar dados completos da série com a temporada detectada
-        const seriesData = await getTMDBSeriesData(firstResult.id.toString(), seasonNumber.toString());
-        return seriesData;
+    for (const variation of searchVariations) {
+      if (variation.length < 2) continue;
+      
+      console.log('🔍 Trying variation:', variation);
+      
+      const searchRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(variation)}`, {
+        next: { revalidate: 600 }
+      });
+      
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        if (searchData.results && searchData.results.length > 0) {
+          const firstResult = searchData.results[0];
+          console.log('✅ Found series:', firstResult.name, 'ID:', firstResult.id, 'using variation:', variation);
+          
+          // Buscar dados completos da série com a temporada detectada
+          const seriesData = await getTMDBSeriesData(firstResult.id.toString(), seasonNumber.toString());
+          return seriesData;
+        }
       }
     }
     
+    console.log('❌ No series found for any variation of:', folderName);
     return null;
   } catch (error) {
     console.error('❌ Error searching TMDb series:', error);
@@ -125,7 +142,10 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     'E33-JMq_j1U': { seriesId: '198102', seasonNumber: '1' }, // Sequestro (2023) - Temporada 1
     'eGohvpY6AEM': { seriesId: '252193', seasonNumber: '1' }, // Até o Ultimo Samurai - Temporada 1
     'IK-L9Qe6-hA': { seriesId: '46125' , seasonNumber: '1' }, // O Profeta - Temporada 1
-    'RrUJGjROpto': { seriesId: '223365', seasonNumber: '1' } // Renascer - Temporada 1
+    'RrUJGjROpto': { seriesId: '223365', seasonNumber: '1' }, // Renascer - Temporada 1
+    'Tg5-TUt6ghE': { seriesId: '41263', seasonNumber: '1' }, // Morde e Assopra - Temporada 1
+    'MNV2DnyQL68': { seriesId: '301557', seasonNumber: '1' } // A Nobreza Do Amor - Temporada 1
+    // Adicione mais mapeamentos aqui se a busca automática não funcionar
   };
   
   const mapping = folderMappings[folderId];
