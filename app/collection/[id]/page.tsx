@@ -145,7 +145,8 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     'RrUJGjROpto': { seriesId: '223365', seasonNumber: '1' }, // Renascer - Temporada 1
     'Tg5-TUt6ghE': { seriesId: '41263', seasonNumber: '1' }, // Morde e Assopra - Temporada 1
     'MNV2DnyQL68': { seriesId: '301557', seasonNumber: '1' }, // A Nobreza Do Amor - Temporada 1
-    'LnDeSqxZHss': { seriesId: '42995', seasonNumber: '1' } // Cobras & Largartos - Temporada 1
+    'LnDeSqxZHss': { seriesId: '42995', seasonNumber: '1' }, // Cobras & Largartos - Temporada 1
+    'bdHaB6aQ-M0': { seriesId: '306956', seasonNumber: '1' } // Quem Ama Cuida - Temporada 1
     // Adicione mais mapeamentos aqui se a busca automática não funcionar
   };
   
