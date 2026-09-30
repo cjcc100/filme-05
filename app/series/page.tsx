@@ -144,7 +144,7 @@ export default async function SeriesPage() {
   
   // Enriquecer pastas com dados TMDb
   const enrichedFolders = await Promise.all(
-    (streamtapeData?.folders?.slice(0, 15) || []).map(async (folder: any) => {
+    (streamtapeData?.folders || []).map(async (folder: any) => {
       // Ignorar pastas de sistema
       if (folder.name === 'Subtitles' || folder.name === 'Thumbnails') {
         return null;
