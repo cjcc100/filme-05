@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Viewport } from "next";
+import { config } from "@/lib/config";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -10,8 +11,8 @@ export const viewport: Viewport = {
 
 async function getStreamtapeFolders() {
   try {
-    const streamtapeLogin = '4db68bae5deec46b3a4b';
-    const streamtapeKey = 'a7azDDb68ACx8dP';
+    const streamtapeLogin = config.streamtape.login;
+    const streamtapeKey = config.streamtape.key;
     
     const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}`, {
       headers: {
@@ -33,10 +34,10 @@ async function getStreamtapeFolders() {
 // Função para detectar temporada automaticamente baseada no ID da pasta
 async function detectSeasonFromFolder(folderId: string): Promise<number> {
   try {
-    const streamtapeLogin = '4db68bae5deec46b3a4b';
-    const streamtapeKey = 'a7azDDb68ACx8dP';
+    const streamtapeLogin = config.streamtape.login;
+    const streamtapeKey = config.streamtape.key;
     
-    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=${folderId}`, {
+    const res = await fetch(`${config.streamtape.apiUrl}/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=${folderId}`, {
       headers: {
         'Accept': 'application/json',
       },
@@ -67,13 +68,13 @@ async function detectSeasonFromFolder(folderId: string): Promise<number> {
 
 async function getTMDBSeriesData(seriesId: string, seasonNumber: string) {
   try {
-    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
+    const tmdbApiKey = config.tmdb.apiKey;
     
-    const seriesRes = await fetch(`https://api.themoviedb.org/3/tv/${seriesId}?api_key=${tmdbApiKey}&language=pt-BR`, {
+    const seriesRes = await fetch(`${config.tmdb.baseUrl}/tv/${seriesId}?api_key=${tmdbApiKey}&language=pt-BR`, {
       next: { revalidate: 3600 }
     });
     
-    const seasonRes = await fetch(`https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNumber}?api_key=${tmdbApiKey}&language=pt-BR`, {
+    const seasonRes = await fetch(`${config.tmdb.baseUrl}/tv/${seriesId}/season/${seasonNumber}?api_key=${tmdbApiKey}&language=pt-BR`, {
       next: { revalidate: 3600 }
     });
     
@@ -90,7 +91,7 @@ async function getTMDBSeriesData(seriesId: string, seasonNumber: string) {
 
 async function searchTMDBSeries(folderName: string, seasonNumber: number = 1) {
   try {
-    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
+    const tmdbApiKey = config.tmdb.apiKey;
     
     // Função para limpar o nome da pasta
     function cleanFolderName(name: string): string {
@@ -105,7 +106,7 @@ async function searchTMDBSeries(folderName: string, seasonNumber: number = 1) {
     const cleanName = cleanFolderName(folderName);
     console.log('🔍 Searching TMDb for:', cleanName, 'with season:', seasonNumber);
     
-    const searchRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanName)}`, {
+    const searchRes = await fetch(`${config.tmdb.baseUrl}/search/tv?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanName)}`, {
       next: { revalidate: 600 }
     });
     
