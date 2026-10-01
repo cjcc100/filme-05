@@ -11,12 +11,6 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-};
-
 // CJCCHUB - Plataforma de Streaming
 // Autor: juniorclaudinei350-sketch
 // Email: juniorclaudinei350@gmail.com
