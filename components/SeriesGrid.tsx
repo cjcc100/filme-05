@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -18,9 +18,7 @@ interface SeriesGridProps {
 
 export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedSeries, setDisplayedSeries] = useState<Series[]>([]);
-  const isFirstRender = useRef(true);
 
   const totalPages = Math.ceil(series.length / seriesPerPage);
   const startIndex = (currentPage - 1) * seriesPerPage;
@@ -28,28 +26,8 @@ export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridPro
   const paginatedSeries = series.slice(startIndex, endIndex);
 
   useEffect(() => {
-    // Na primeira renderização, não aplicar animação
-    if (isFirstRender.current) {
-      setDisplayedSeries(paginatedSeries);
-      isFirstRender.current = false;
-      return;
-    }
-
-    setIsTransitioning(true);
-    
-    // Timeout para a animação de saída
-    setTimeout(() => {
-      setDisplayedSeries(paginatedSeries);
-      setIsTransitioning(false);
-    }, 300);
-  }, [currentPage, paginatedSeries]);
-
-  useEffect(() => {
-    // Atualizar quando as séries mudarem (não na primeira renderização)
-    if (!isFirstRender.current) {
-      setDisplayedSeries(paginatedSeries);
-    }
-  }, [series]);
+    setDisplayedSeries(paginatedSeries);
+  }, [series, currentPage, paginatedSeries]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
@@ -67,11 +45,7 @@ export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridPro
 
   return (
     <div className="w-full">
-      <div 
-        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 transition-all duration-300 ${
-          isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
-        }`}
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {displayedSeries.map((folder: any, index: number) => {
           const tmdbData = folder.tmdbData;
           const seriesData = tmdbData?.series;
@@ -97,9 +71,6 @@ export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridPro
               key={folder.id}
               href={`/collection/${folder.id}`}
               className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
-              style={{
-                animationDelay: `${index * 50}ms`,
-              }}
             >
               <div className="relative aspect-[2/3] overflow-hidden">
                 {imageUrl ? (

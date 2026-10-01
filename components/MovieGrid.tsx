@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,9 +25,7 @@ interface MovieGridProps {
 
 export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<Movie[]>([]);
-  const isFirstRender = useRef(true);
 
   const totalPages = Math.ceil(movies.length / moviesPerPage);
   const startIndex = (currentPage - 1) * moviesPerPage;
@@ -35,28 +33,8 @@ export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps
   const paginatedMovies = movies.slice(startIndex, endIndex);
 
   useEffect(() => {
-    // Na primeira renderização, não aplicar animação
-    if (isFirstRender.current) {
-      setDisplayedMovies(paginatedMovies);
-      isFirstRender.current = false;
-      return;
-    }
-
-    setIsTransitioning(true);
-    
-    // Timeout para a animação de saída
-    setTimeout(() => {
-      setDisplayedMovies(paginatedMovies);
-      setIsTransitioning(false);
-    }, 300);
-  }, [currentPage, paginatedMovies]);
-
-  useEffect(() => {
-    // Atualizar quando os filmes mudarem (não na primeira renderização)
-    if (!isFirstRender.current) {
-      setDisplayedMovies(paginatedMovies);
-    }
-  }, [movies]);
+    setDisplayedMovies(paginatedMovies);
+  }, [movies, currentPage, paginatedMovies]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
@@ -74,11 +52,7 @@ export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps
 
   return (
     <div className="w-full">
-      <div 
-        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 transition-all duration-300 ${
-          isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
-        }`}
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {displayedMovies.map((movie: any, index: number) => {
           const isStreamtape = movie.linkid;
           const tmdbData = movie.tmdbData;
@@ -102,9 +76,6 @@ export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps
               key={movie.linkid || movie.id || index}
               href={movieLink}
               className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
-              style={{
-                animationDelay: `${index * 50}ms`,
-              }}
             >
               <div className="relative aspect-[2/3] overflow-hidden">
                 {imageUrl ? (
