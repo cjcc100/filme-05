@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -27,6 +27,7 @@ export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps
   const [currentPage, setCurrentPage] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedMovies, setDisplayedMovies] = useState<Movie[]>([]);
+  const isFirstRender = useRef(true);
 
   const totalPages = Math.ceil(movies.length / moviesPerPage);
   const startIndex = (currentPage - 1) * moviesPerPage;
@@ -34,6 +35,13 @@ export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps
   const paginatedMovies = movies.slice(startIndex, endIndex);
 
   useEffect(() => {
+    // Na primeira renderização, não aplicar animação
+    if (isFirstRender.current) {
+      setDisplayedMovies(paginatedMovies);
+      isFirstRender.current = false;
+      return;
+    }
+
     setIsTransitioning(true);
     
     // Timeout para a animação de saída
@@ -44,7 +52,10 @@ export default function MovieGrid({ movies, moviesPerPage = 20 }: MovieGridProps
   }, [currentPage, paginatedMovies]);
 
   useEffect(() => {
-    setDisplayedMovies(paginatedMovies);
+    // Atualizar quando os filmes mudarem (não na primeira renderização)
+    if (!isFirstRender.current) {
+      setDisplayedMovies(paginatedMovies);
+    }
   }, [movies]);
 
   const handlePageChange = (newPage: number) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -20,6 +20,7 @@ export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridPro
   const [currentPage, setCurrentPage] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedSeries, setDisplayedSeries] = useState<Series[]>([]);
+  const isFirstRender = useRef(true);
 
   const totalPages = Math.ceil(series.length / seriesPerPage);
   const startIndex = (currentPage - 1) * seriesPerPage;
@@ -27,6 +28,13 @@ export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridPro
   const paginatedSeries = series.slice(startIndex, endIndex);
 
   useEffect(() => {
+    // Na primeira renderização, não aplicar animação
+    if (isFirstRender.current) {
+      setDisplayedSeries(paginatedSeries);
+      isFirstRender.current = false;
+      return;
+    }
+
     setIsTransitioning(true);
     
     // Timeout para a animação de saída
@@ -37,7 +45,10 @@ export default function SeriesGrid({ series, seriesPerPage = 20 }: SeriesGridPro
   }, [currentPage, paginatedSeries]);
 
   useEffect(() => {
-    setDisplayedSeries(paginatedSeries);
+    // Atualizar quando as séries mudarem (não na primeira renderização)
+    if (!isFirstRender.current) {
+      setDisplayedSeries(paginatedSeries);
+    }
   }, [series]);
 
   const handlePageChange = (newPage: number) => {
