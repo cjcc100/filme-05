@@ -237,7 +237,8 @@ async function searchTMDBMovie(query: string) {
   }
 }
 
-export default async function Home({ searchParams }: { searchParams: { page?: string } }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
   const streamtapeData = await getStreamtapeFiles();
   
   // Usar arquivos do Streamtape
@@ -266,7 +267,7 @@ export default async function Home({ searchParams }: { searchParams: { page?: st
   const featuredMovies = movies.slice(0, 5);
   
   // Paginação: mostrar 20 filmes por página
-  const currentPage = parseInt(searchParams.page || '1', 10);
+  const currentPage = parseInt(params.page || '1', 10);
   const moviesPerPage = 20;
   const totalPages = Math.ceil(movies.length / moviesPerPage);
   const startIndex = (currentPage - 1) * moviesPerPage;
@@ -366,33 +367,35 @@ export default async function Home({ searchParams }: { searchParams: { page?: st
           {/* Controles de Paginação */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-4 mt-8">
-              <Link
-                href={`/?page=${Math.max(1, currentPage - 1)}`}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentPage === 1
-                    ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
-                aria-disabled={currentPage === 1}
-              >
-                Anterior
-              </Link>
+              {currentPage > 1 ? (
+                <Link
+                  href={`/?page=${currentPage - 1}`}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Anterior
+                </Link>
+              ) : (
+                <span className="px-4 py-2 rounded-lg font-medium bg-zinc-700 text-zinc-400 cursor-not-allowed">
+                  Anterior
+                </span>
+              )}
               
               <span className="text-white font-medium">
                 Página {currentPage} de {totalPages}
               </span>
               
-              <Link
-                href={`/?page=${Math.min(totalPages, currentPage + 1)}`}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentPage === totalPages
-                    ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
-                aria-disabled={currentPage === totalPages}
-              >
-                Próxima
-              </Link>
+              {currentPage < totalPages ? (
+                <Link
+                  href={`/?page=${currentPage + 1}`}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Próxima
+                </Link>
+              ) : (
+                <span className="px-4 py-2 rounded-lg font-medium bg-zinc-700 text-zinc-400 cursor-not-allowed">
+                  Próxima
+                </span>
+              )}
             </div>
           )}
         </section>
