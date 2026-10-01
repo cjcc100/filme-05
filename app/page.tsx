@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import HeroCarousel from "../components/HeroCarousel";
+import HeroCarousel from "@/components/HeroCarousel";
 import { config } from "@/lib/config";
 import type { Viewport } from "next";
 
