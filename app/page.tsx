@@ -364,9 +364,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
             })}
           </div>
           
-          {/* Paginação Simples */}
+          {/* Paginação com Números */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-8">
+            <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
               {currentPage > 1 && (
                 <Link 
                   href={`/?page=${currentPage - 1}`}
@@ -376,9 +376,50 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 </Link>
               )}
               
-              <span className="text-white">
-                Página {currentPage} de {totalPages}
-              </span>
+              {/* Mostrar números de página */}
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Link
+                    key={pageNum}
+                    href={`/?page=${pageNum}`}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-red-600 text-white'
+                        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </Link>
+                );
+              })}
+              
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <span className="text-zinc-400">...</span>
+              )}
+              
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <Link
+                  href={`/?page=${totalPages}`}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    currentPage === totalPages
+                      ? 'bg-red-600 text-white'
+                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  }`}
+                >
+                  {totalPages}
+                </Link>
+              )}
               
               {currentPage < totalPages && (
                 <Link 

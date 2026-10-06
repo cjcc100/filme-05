@@ -279,9 +279,9 @@ export default async function SeriesPage({ searchParams }: { searchParams: Promi
             })}
           </div>
           
-          {/* Paginação Simples */}
+          {/* Paginação com Números */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-8">
+            <div className="flex justify-center items-center gap-2 mt-8 flex-wrap">
               {currentPage > 1 && (
                 <Link 
                   href={`/series?page=${currentPage - 1}`}
@@ -291,9 +291,50 @@ export default async function SeriesPage({ searchParams }: { searchParams: Promi
                 </Link>
               )}
               
-              <span className="text-white">
-                Página {currentPage} de {totalPages}
-              </span>
+              {/* Mostrar números de página */}
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Link
+                    key={pageNum}
+                    href={`/series?page=${pageNum}`}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-red-600 text-white'
+                        : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                    }`}
+                  >
+                    {pageNum}
+                  </Link>
+                );
+              })}
+              
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <span className="text-zinc-400">...</span>
+              )}
+              
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <Link
+                  href={`/series?page=${totalPages}`}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    currentPage === totalPages
+                      ? 'bg-red-600 text-white'
+                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  }`}
+                >
+                  {totalPages}
+                </Link>
+              )}
               
               {currentPage < totalPages && (
                 <Link 
