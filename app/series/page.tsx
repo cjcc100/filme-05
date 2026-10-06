@@ -140,7 +140,8 @@ export default async function SeriesPage() {
     'HdsqTHs6H40': { seriesId: '82452' }, // Avatar: O Último Mestre do Ar
     'ZMQ2HmOkazs': { seriesId: '254071' }, // O Roubo (2026)
     'WC8gP0Vw2p4': { seriesId: '198102' }, // Sequestro (2023)
-    'bdHaB6aQ-M0': { seriesId: '306956' } // Quem Ama Cuida
+    'bdHaB6aQ-M0': { seriesId: '306956' }, // Quem Ama Cuida
+    'UuXDVzqLooQ': { seriesId: '224505' } // Amor da Minha Vida
   };
   
   // Enriquecer pastas com dados TMDb
