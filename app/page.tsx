@@ -3,6 +3,7 @@ import Link from "next/link";
 import HeroCarousel from "@/components/HeroCarousel";
 import { config } from "@/lib/config";
 import type { Viewport } from "next";
+import SearchBar from "@/components/SearchBar";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -291,9 +292,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
               <Link href="/series" className="text-zinc-300 hover:text-white transition-colors">Séries</Link>
               <Link href="#" className="text-zinc-300 hover:text-white transition-colors">Minha Lista</Link>
             </nav>
-            <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
-              Assinar - Planos
-            </Link>
+            <div className="flex items-center gap-4">
+              <SearchBar movies={movies} />
+              <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
+                Assinar
+              </Link>
+            </div>
           </div>
         </div>
       </header>
