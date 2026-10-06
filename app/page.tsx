@@ -237,7 +237,8 @@ async function searchTMDBMovie(query: string) {
   }
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
   const streamtapeData = await getStreamtapeFiles();
   
   // Usar arquivos do Streamtape
@@ -264,6 +265,14 @@ export default async function Home() {
   // SEMPRE usar arquivos do Streamtape, mesmo sem dados TMDb
   const movies = enrichedFiles.reverse(); // Inverter para mostrar mais recentes primeiro
   const featuredMovies = movies.slice(0, 5);
+  
+  // Paginação simples
+  const currentPage = parseInt(params.page || '1', 10);
+  const moviesPerPage = 20;
+  const totalPages = Math.ceil(movies.length / moviesPerPage);
+  const startIndex = (currentPage - 1) * moviesPerPage;
+  const endIndex = startIndex + moviesPerPage;
+  const paginatedMovies = movies.slice(startIndex, endIndex);
   
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -295,7 +304,7 @@ export default async function Home() {
         <section id="filmes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-2xl font-bold text-white mb-8">Filmes Populares</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {movies.map((movie: any) => {
+            {paginatedMovies.map((movie: any) => {
               const isStreamtape = movie.linkid;
               const tmdbData = movie.tmdbData;
               
@@ -354,6 +363,33 @@ export default async function Home() {
               );
             })}
           </div>
+          
+          {/* Paginação Simples */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              {currentPage > 1 && (
+                <Link 
+                  href={`/?page=${currentPage - 1}`}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Anterior
+                </Link>
+              )}
+              
+              <span className="text-white">
+                Página {currentPage} de {totalPages}
+              </span>
+              
+              {currentPage < totalPages && (
+                <Link 
+                  href={`/?page=${currentPage + 1}`}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Próxima
+                </Link>
+              )}
+            </div>
+          )}
         </section>
       </main>
 

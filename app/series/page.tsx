@@ -129,7 +129,8 @@ async function searchTMDBSeries(folderName: string, seasonNumber: number = 1) {
   }
 }
 
-export default async function SeriesPage() {
+export default async function SeriesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
   const streamtapeData = await getStreamtapeFolders();
   
   // Mapeamento de pastas Streamtape para IDs TMDb (apenas ID da série, temporada detectada automaticamente)
@@ -181,6 +182,14 @@ export default async function SeriesPage() {
   const validFolders = enrichedFolders.filter(f => f !== null);
   
   const series = validFolders;
+  
+  // Paginação simples
+  const currentPage = parseInt(params.page || '1', 10);
+  const seriesPerPage = 20;
+  const totalPages = Math.ceil(series.length / seriesPerPage);
+  const startIndex = (currentPage - 1) * seriesPerPage;
+  const endIndex = startIndex + seriesPerPage;
+  const paginatedSeries = series.slice(startIndex, endIndex);
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -211,7 +220,7 @@ export default async function SeriesPage() {
           <h1 className="text-3xl font-bold text-white mb-8">Séries Populares</h1>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {series.map((folder: any) => {
+            {paginatedSeries.map((folder: any) => {
               const tmdbData = folder.tmdbData;
               const seriesData = tmdbData?.series;
               const seasonData = tmdbData?.season;
@@ -269,6 +278,33 @@ export default async function SeriesPage() {
               );
             })}
           </div>
+          
+          {/* Paginação Simples */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              {currentPage > 1 && (
+                <Link 
+                  href={`/series?page=${currentPage - 1}`}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Anterior
+                </Link>
+              )}
+              
+              <span className="text-white">
+                Página {currentPage} de {totalPages}
+              </span>
+              
+              {currentPage < totalPages && (
+                <Link 
+                  href={`/series?page=${currentPage + 1}`}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Próxima
+                </Link>
+              )}
+            </div>
+          )}
           
           {series.length === 0 && (
             <div className="bg-zinc-800 rounded-xl p-8 text-center">
