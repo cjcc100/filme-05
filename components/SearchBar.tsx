@@ -92,7 +92,7 @@ export default function SearchBar({ movies = [] }: SearchBarProps) {
             return (
               <button
                 key={index}
-                onClick={() => handleSuggestionClick(movie)}
+                onClick={() => handleSuggestionClick(item)}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-700 transition-colors text-left"
               >
                 {imageUrl ? (
