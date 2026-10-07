@@ -39,8 +39,29 @@ export default function SearchBar({ movies = [] }: SearchBarProps) {
   };
 
   const handleSuggestionClick = (item: any) => {
+    const tmdbId = item.tmdbData?.id || item.id;
+    const mediaType = item.tmdbData?.media_type || item.media_type;
     const title = item.title || item.name || item.tmdbData?.title || item.tmdbData?.name || item.tmdbData?.series?.name || '';
-    router.push(`/search?q=${encodeURIComponent(title)}`);
+    
+    // Se tiver ID do TMDb, navega direto para o filme/série
+    if (tmdbId) {
+      if (mediaType === 'tv' || (item.tmdbData?.series && !item.tmdbData?.title)) {
+        // É uma série - vai para collection se tiver linkid, senão não faz nada
+        if (item.linkid) {
+          router.push(`/collection/${item.linkid}`);
+        } else {
+          // Se não tiver linkid, vai para busca
+          router.push(`/search?q=${encodeURIComponent(title)}`);
+        }
+      } else {
+        // É um filme - vai para movie
+        router.push(`/movie/${tmdbId}`);
+      }
+    } else {
+      // Se não tiver ID, vai para busca
+      router.push(`/search?q=${encodeURIComponent(title)}`);
+    }
+    
     setShowSuggestions(false);
     setQuery("");
   };
