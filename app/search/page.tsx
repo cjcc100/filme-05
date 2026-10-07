@@ -137,7 +137,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                          // Comparação mais estrita: deve ter pelo menos 70% de similaridade
                          const words1 = cleanTitle.split(' ');
                          const words2 = t.split(' ');
-                         const commonWords = words1.filter(w => words2.includes(w));
+                         const commonWords = words1.filter((w: string) => words2.includes(w));
                          const similarity = commonWords.length / Math.max(words1.length, words2.length);
                          return similarity >= 0.7 && (words1.length > 0 && words2.length > 0);
                        });
