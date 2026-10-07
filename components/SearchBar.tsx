@@ -43,25 +43,20 @@ export default function SearchBar({ movies = [], series = [] }: SearchBarProps) 
 
   const handleSuggestionClick = (item: any) => {
     const tmdbId = item.tmdbData?.id || item.id;
+    const linkid = item.id || item.linkid || item.folder?.id;
     const mediaType = item.tmdbData?.media_type || item.media_type;
     const title = item.title || item.name || item.tmdbData?.title || item.tmdbData?.name || item.tmdbData?.series?.name || '';
     
-    // Se tiver ID do TMDb, navega direto para o filme/série
-    if (tmdbId) {
-      if (mediaType === 'tv' || (item.tmdbData?.series && !item.tmdbData?.title)) {
-        // É uma série - vai para collection se tiver linkid, senão não faz nada
-        if (item.linkid) {
-          router.push(`/collection/${item.linkid}`);
-        } else {
-          // Se não tiver linkid, vai para busca
-          router.push(`/search?q=${encodeURIComponent(title)}`);
-        }
-      } else {
-        // É um filme - vai para movie
-        router.push(`/movie/${tmdbId}`);
-      }
-    } else {
-      // Se não tiver ID, vai para busca
+    // Se tiver linkid (é uma série no site), vai para collection
+    if (linkid) {
+      router.push(`/collection/${linkid}`);
+    }
+    // Se tiver ID do TMDb e for filme, vai para movie
+    else if (tmdbId && mediaType !== 'tv' && !item.tmdbData?.series) {
+      router.push(`/movie/${tmdbId}`);
+    }
+    // Se não tiver linkid nem ID, vai para busca
+    else {
       router.push(`/search?q=${encodeURIComponent(title)}`);
     }
     
