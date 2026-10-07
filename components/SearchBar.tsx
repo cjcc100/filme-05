@@ -53,7 +53,7 @@ export default function SearchBar({ movies = [] }: SearchBarProps) {
           value={query}
           onChange={handleInputChange}
           onFocus={() => query.length > 0 && setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 300)}
           placeholder="Buscar filmes e séries..."
           className="w-full px-4 py-3 pl-12 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
         />
@@ -92,7 +92,15 @@ export default function SearchBar({ movies = [] }: SearchBarProps) {
             return (
               <button
                 key={index}
-                onClick={() => handleSuggestionClick(item)}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSuggestionClick(item);
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSuggestionClick(item);
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-700 transition-colors text-left"
               >
                 {imageUrl ? (
