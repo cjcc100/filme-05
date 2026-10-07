@@ -148,7 +148,11 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     'LnDeSqxZHss': { seriesId: '42995', seasonNumber: '1' }, // Cobras & Largartos - Temporada 1
     'bdHaB6aQ-M0': { seriesId: '306956', seasonNumber: '1' }, // Quem Ama Cuida - Temporada 1
     'UuXDVzqLooQ': { seriesId: '224505', seasonNumber: '1' }, // Amor da Minha Vida - Temporada 1
-    'dWVcc8yIUYU': { seriesId: '45759', seasonNumber: '1' } // Renascer (1993) - Temporada 1
+    'UuXDVzqLooQ': { seriesId: '224505', seasonNumber: '1' }, // Amor da Minha Vida - Temporada 1
+    'dWVcc8yIUYU': { seriesId: '45759', seasonNumber: '1' }, // Renascer (1993) - Temporada 1
+    'BbD41s87hN0': { seriesId: '41731', seasonNumber: '1' }, // Rei Do Gado (1996) - Temporada 1
+    'X0lvsl2lTT0': { seriesId: '7979', seasonNumber: '1' }, // Caminho Das Indias - Temporada 1
+    'c0Ae-CbQvPI': { seriesId: '288673', seasonNumber: '1' } // Carrie, a Estranha- Temporada 1 bc63b2f4a1be6f68d45f6ae4da0f4523a3a38c42
     // Adicione mais mapeamentos aqui se a busca automática não funcionar
   };
   

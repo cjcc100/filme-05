@@ -22,11 +22,45 @@ async function searchTMDB(query: string) {
   }
 }
 
+async function getStreamtapeFiles() {
+  try {
+    const streamtapeLogin = config.streamtape.login;
+    const streamtapeKey = config.streamtape.key;
+    
+    const res = await fetch(`${config.streamtape.apiUrl}/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+      next: { revalidate: 300 }
+    });
+    if (!res.ok) return null;
+    
+    const data = await res.json();
+    if (data.status !== 200 || !data.result?.files) return null;
+    
+    return data.result;
+  } catch (error) {
+    return null;
+  }
+}
+
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const params = await searchParams;
   const query = params.q || '';
   
   let results = [];
+  let availableIds = new Set<string>();
+  
+  // Buscar arquivos disponíveis no Streamtape
+  const streamtapeData = await getStreamtapeFiles();
+  if (streamtapeData?.files) {
+    streamtapeData.files.forEach((file: any) => {
+      if (file.linkid) {
+        availableIds.add(file.linkid);
+      }
+    });
+  }
+  
   if (query.length > 0) {
     results = await searchTMDB(query);
   }
@@ -79,58 +113,71 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {filteredResults.map((item: any) => {
-                const imageUrl = item.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                  : item.backdrop_path
-                  ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}`
-                  : null;
-                
-                const title = item.title || item.name || 'Sem título';
-                const year = item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0] || 'N/A';
-                const rating = item.vote_average?.toFixed(1) || 'N/A';
-                const isTV = item.media_type === 'tv';
+            <>
+              <div className="mb-4 bg-zinc-800 rounded-lg p-4 text-center">
+                <p className="text-zinc-400 text-sm">
+                  📺 Resultados do catálogo TMDb - {filteredResults.length} encontrados
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {filteredResults.map((item: any) => {
+                  const imageUrl = item.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                    : item.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w500${item.backdrop_path}`
+                    : null;
+                  
+                  const title = item.title || item.name || 'Sem título';
+                  const year = item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0] || 'N/A';
+                  const rating = item.vote_average?.toFixed(1) || 'N/A';
+                  const isTV = item.media_type === 'tv';
 
-                return (
-                  <div
-                    key={item.id}
-                    className="group relative bg-zinc-800 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
-                  >
-                    <div className="relative aspect-[2/3] overflow-hidden">
-                      {imageUrl ? (
-                        <Image
-                          src={imageUrl}
-                          alt={title}
-                          fill
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                          className="object-cover transition-transform duration-300 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-700 flex items-center justify-center">
-                          <span className="text-zinc-500 text-sm">Sem imagem</span>
+                  return (
+                    <div
+                      key={item.id}
+                      className="group relative bg-zinc-800/50 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20 border border-zinc-700"
+                    >
+                      <div className="relative aspect-[2/3] overflow-hidden">
+                        {imageUrl ? (
+                          <Image
+                            src={imageUrl}
+                            alt={title}
+                            fill
+                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-110 opacity-70"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-700 flex items-center justify-center opacity-70">
+                            <span className="text-zinc-500 text-sm">Sem imagem</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        {isTV && (
+                          <div className="absolute top-2 left-2 bg-purple-600/70 text-white text-xs font-bold px-2 py-1 rounded">
+                            Série
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-sm font-bold px-2 py-1 rounded">
+                          {rating}
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      {isTV && (
-                        <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">
-                          Série
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="text-center">
+                            <span className="text-white text-sm font-medium">No catálogo TMDb</span>
+                            <span className="text-zinc-300 text-xs block mt-1">Pode não estar disponível</span>
+                          </div>
                         </div>
-                      )}
-                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-sm font-bold px-2 py-1 rounded">
-                        {rating}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="text-white font-semibold text-sm mb-1 line-clamp-1">
+                          {title}
+                        </h3>
+                        <p className="text-zinc-400 text-xs">{year}</p>
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="text-white font-semibold text-sm mb-1 line-clamp-1">
-                        {title}
-                      </h3>
-                      <p className="text-zinc-400 text-xs">{year}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </main>
