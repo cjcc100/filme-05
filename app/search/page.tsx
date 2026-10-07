@@ -131,11 +131,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       .replace(/\s+/g, ' ')
       .trim();
     
-    // Verificar se está disponível no Streamtape
+    // Verificar se está disponível no Streamtape com comparação mais estrita
     const isAvailable = availableTitles.has(cleanTitle) || 
-                       Array.from(availableTitles).some((t: string) => 
-                         t.includes(cleanTitle) || cleanTitle.includes(t)
-                       );
+                       Array.from(availableTitles).some((t: string) => {
+                         // Comparação mais estrita: deve ter pelo menos 70% de similaridade
+                         const words1 = cleanTitle.split(' ');
+                         const words2 = t.split(' ');
+                         const commonWords = words1.filter(w => words2.includes(w));
+                         const similarity = commonWords.length / Math.max(words1.length, words2.length);
+                         return similarity >= 0.7 && (words1.length > 0 && words2.length > 0);
+                       });
     
     return {
       ...item,
