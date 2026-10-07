@@ -150,7 +150,8 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
     'UuXDVzqLooQ': { seriesId: '224505', seasonNumber: '1' }, // Amor da Minha Vida - Temporada 1
     'dWVcc8yIUYU': { seriesId: '45759', seasonNumber: '1' }, // Renascer (1993) - Temporada 1
     'BbD41s87hN0': { seriesId: '41731', seasonNumber: '1' }, // Rei Do Gado (1996) - Temporada 1
-    'X0lvsl2lTT0': { seriesId: '7979', seasonNumber: '1' } // Caminho Das Indias - Temporada 1
+    'X0lvsl2lTT0': { seriesId: '7979', seasonNumber: '1' }, // Caminho Das Indias - Temporada 1
+    'c0Ae-CbQvPI': { seriesId: '288673', seasonNumber: '1' } // Carrie, a Estranha- Temporada 1
     
     
     // Adicione mais mapeamentos aqui se a busca automática não funcionar
