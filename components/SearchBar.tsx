@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 interface SearchBarProps {
   movies?: any[];
+  series?: any[];
 }
 
-export default function SearchBar({ movies = [] }: SearchBarProps) {
+export default function SearchBar({ movies = [], series = [] }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -26,7 +27,9 @@ export default function SearchBar({ movies = [] }: SearchBarProps) {
     setQuery(value);
     
     if (value.length > 0) {
-      const filtered = movies.filter((item: any) => {
+      // Combinar filmes e séries para sugestões
+      const allItems = [...movies, ...series];
+      const filtered = allItems.filter((item: any) => {
         const title = item.title || item.name || item.tmdbData?.title || item.tmdbData?.name || item.tmdbData?.series?.name || '';
         return title.toLowerCase().includes(value.toLowerCase());
       }).slice(0, 5);

@@ -212,7 +212,7 @@ export default async function SeriesPage({ searchParams }: { searchParams: Promi
               <Link href="#" className="text-zinc-300 hover:text-white transition-colors">Minha Lista</Link>
             </nav>
             <div className="flex items-center gap-4">
-              <SearchBar movies={series} />
+              <SearchBar series={series} />
               <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
                 Assinar
               </Link>
