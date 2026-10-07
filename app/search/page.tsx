@@ -44,19 +44,72 @@ async function getStreamtapeFiles() {
   }
 }
 
+async function getStreamtapeFolders() {
+  try {
+    const streamtapeLogin = config.streamtape.login;
+    const streamtapeKey = config.streamtape.key;
+    
+    const res = await fetch(`${config.streamtape.apiUrl}/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+      next: { revalidate: 300 }
+    });
+    if (!res.ok) return null;
+    
+    const data = await res.json();
+    if (data.status !== 200 || !data.result?.folders) return null;
+    
+    return data.result;
+  } catch (error) {
+    return null;
+  }
+}
+
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const params = await searchParams;
   const query = params.q || '';
   
   let results = [];
-  let availableIds = new Set<string>();
+  let availableTitles = new Set<string>();
   
-  // Buscar arquivos disponíveis no Streamtape
+  // Buscar arquivos disponíveis no Streamtape (filmes)
   const streamtapeData = await getStreamtapeFiles();
   if (streamtapeData?.files) {
     streamtapeData.files.forEach((file: any) => {
-      if (file.linkid) {
-        availableIds.add(file.linkid);
+      const name = file.name?.toLowerCase() || '';
+      // Limpar nome: remover extensão, ano, etc
+      const cleanName = name
+        .split('.')[0]
+        .replace(/\d{4}/g, '')
+        .replace(/\[.*?\]/g, '')
+        .replace(/\(.*?\)/g, '')
+        .replace(/[._-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (cleanName) {
+        availableTitles.add(cleanName);
+      }
+    });
+  }
+  
+  // Buscar pastas disponíveis no Streamtape (séries)
+  const foldersData = await getStreamtapeFolders();
+  if (foldersData?.folders) {
+    foldersData.folders.forEach((folder: any) => {
+      const name = folder.name?.toLowerCase() || '';
+      // Ignorar pastas de sistema
+      if (name !== 'subtitles' && name !== 'thumbnails') {
+        const cleanName = name
+          .replace(/\d{4}/g, '')
+          .replace(/\[.*?\]/g, '')
+          .replace(/\(.*?\)/g, '')
+          .replace(/[._-]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (cleanName) {
+          availableTitles.add(cleanName);
+        }
       }
     });
   }
@@ -65,10 +118,30 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     results = await searchTMDB(query);
   }
   
-  // Filtrar apenas filmes e séries
+  // Filtrar apenas filmes e séries e marcar disponíveis
   const filteredResults = results.filter((item: any) => 
     item.media_type === 'movie' || item.media_type === 'tv'
-  );
+  ).map((item: any) => {
+    const title = (item.title || item.name || '').toLowerCase();
+    const cleanTitle = title
+      .replace(/\d{4}/g, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/\(.*?\)/g, '')
+      .replace(/[._-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Verificar se está disponível no Streamtape
+    const isAvailable = availableTitles.has(cleanTitle) || 
+                       Array.from(availableTitles).some((t: string) => 
+                         t.includes(cleanTitle) || cleanTitle.includes(t)
+                       );
+    
+    return {
+      ...item,
+      isAvailable
+    };
+  });
   
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -131,12 +204,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   const year = item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0] || 'N/A';
                   const rating = item.vote_average?.toFixed(1) || 'N/A';
                   const isTV = item.media_type === 'tv';
+                  const isAvailable = item.isAvailable;
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="group relative bg-zinc-800/50 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20 border border-zinc-700"
-                    >
+                  const cardContent = (
+                    <>
                       <div className="relative aspect-[2/3] overflow-hidden">
                         {imageUrl ? (
                           <Image
@@ -144,10 +215,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                             alt={title}
                             fill
                             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                            className="object-cover transition-transform duration-300 group-hover:scale-110 opacity-70"
+                            className={`object-cover transition-transform duration-300 group-hover:scale-110 ${isAvailable ? 'opacity-100' : 'opacity-70'}`}
                           />
                         ) : (
-                          <div className="w-full h-full bg-zinc-700 flex items-center justify-center opacity-70">
+                          <div className={`w-full h-full bg-zinc-700 flex items-center justify-center ${isAvailable ? 'opacity-100' : 'opacity-70'}`}>
                             <span className="text-zinc-500 text-sm">Sem imagem</span>
                           </div>
                         )}
@@ -160,12 +231,18 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-sm font-bold px-2 py-1 rounded">
                           {rating}
                         </div>
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="text-center">
-                            <span className="text-white text-sm font-medium">No catálogo TMDb</span>
-                            <span className="text-zinc-300 text-xs block mt-1">Pode não estar disponível</span>
+                        {isAvailable ? (
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-green-600/90 text-white text-xs font-bold px-2 py-1 rounded">
+                            Disponível
                           </div>
-                        </div>
+                        ) : (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="text-center">
+                              <span className="text-white text-sm font-medium">No catálogo TMDb</span>
+                              <span className="text-zinc-300 text-xs block mt-1">Pode não estar disponível</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="p-4">
                         <h3 className="text-white font-semibold text-sm mb-1 line-clamp-1">
@@ -173,8 +250,29 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                         </h3>
                         <p className="text-zinc-400 text-xs">{year}</p>
                       </div>
-                    </div>
+                    </>
                   );
+
+                  if (isAvailable) {
+                    return (
+                      <Link
+                        key={item.id}
+                        href={isTV ? '#' : `/movie/${item.id}`}
+                        className="group relative bg-zinc-800/50 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20 border border-zinc-700"
+                      >
+                        {cardContent}
+                      </Link>
+                    );
+                  } else {
+                    return (
+                      <div
+                        key={item.id}
+                        className="group relative bg-zinc-800/50 rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20 border border-zinc-700"
+                      >
+                        {cardContent}
+                      </div>
+                    );
+                  }
                 })}
               </div>
             </>
