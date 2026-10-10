@@ -75,6 +75,27 @@ async function searchTMDBTV(query: string) {
   }
 }
 
+async function getTMDBMovieById(movieId: string) {
+  try {
+    const tmdbApiKey = config.tmdb.apiKey;
+    
+    const res = await fetch(`${config.tmdb.baseUrl}/movie/${movieId}?api_key=${tmdbApiKey}&language=pt-BR`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      console.log('🎯 TMDb found by ID:', movieId, data.title);
+      return data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching TMDb by ID:', error);
+    return null;
+  }
+}
+
 async function searchTMDBMovie(query: string) {
   try {
     const tmdbApiKey = config.tmdb.apiKey;
@@ -250,7 +271,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     files.map(async (file: any) => {
       const fileName = file.name || '';
       console.log('Processing file:', fileName);
-      const tmdbData = fileName ? await searchTMDBMovie(fileName) : null;
+      
+      let tmdbData = null;
+      
+      // Verificar se o nome do arquivo contém um ID do TMDb (ex: 7515.mp4, 7515-Filme.mp4)
+      const tmdbIdMatch = fileName.match(/^(\d+)/);
+      if (tmdbIdMatch) {
+        const tmdbId = tmdbIdMatch[1];
+        console.log('🎯 Found TMDb ID in filename:', tmdbId);
+        tmdbData = await getTMDBMovieById(tmdbId);
+      }
+      
+      // Se não encontrou por ID, tenta buscar pelo nome
+      if (!tmdbData && fileName) {
+        tmdbData = await searchTMDBMovie(fileName);
+      }
+      
       console.log('TMDb result for', fileName, ':', tmdbData ? `FOUND (ID: ${tmdbData.id}, Type: ${tmdbData.title ? 'Movie' : 'TV'})` : 'NOT FOUND');
       
       return {

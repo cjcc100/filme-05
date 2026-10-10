@@ -90,6 +90,31 @@ async function getTMDBSeriesData(seriesId: string, seasonNumber: string) {
   }
 }
 
+async function getTMDBSeriesById(seriesId: string, seasonNumber: string) {
+  try {
+    const tmdbApiKey = config.tmdb.apiKey;
+    
+    const seriesRes = await fetch(`${config.tmdb.baseUrl}/tv/${seriesId}?api_key=${tmdbApiKey}&language=pt-BR`, {
+      next: { revalidate: 3600 }
+    });
+    
+    const seasonRes = await fetch(`${config.tmdb.baseUrl}/tv/${seriesId}/season/${seasonNumber}?api_key=${tmdbApiKey}&language=pt-BR`, {
+      next: { revalidate: 3600 }
+    });
+    
+    if (!seriesRes.ok || !seasonRes.ok) return null;
+    
+    const seriesData = await seriesRes.json();
+    const seasonData = await seasonRes.json();
+    
+    console.log('🎯 TMDb series found by ID:', seriesId, seriesData.name);
+    return { series: seriesData, season: seasonData };
+  } catch (error) {
+    console.error('Error fetching TMDb series by ID:', error);
+    return null;
+  }
+}
+
 async function searchTMDBSeries(folderName: string, seasonNumber: number = 1) {
   try {
     const tmdbApiKey = config.tmdb.apiKey;
@@ -163,11 +188,19 @@ export default async function SeriesPage({ searchParams }: { searchParams: Promi
       const mapping = folderMappings[folder.id] || folderMappings[folder.name];
       let tmdbData = null;
       
-      if (mapping) {
+      // Verificar se o nome da pasta contém um ID do TMDb (ex: 45759-Serie, 45759 Temporada 1)
+      const tmdbIdMatch = folder.name.match(/^(\d+)/);
+      if (tmdbIdMatch) {
+        const tmdbId = tmdbIdMatch[1];
+        console.log('🎯 Found TMDb ID in folder name:', tmdbId);
+        tmdbData = await getTMDBSeriesById(tmdbId, detectedSeason.toString());
+      }
+      
+      if (mapping && !tmdbData) {
         // Usar mapeamento manual com temporada detectada automaticamente
         console.log('📋 Using manual mapping with auto-detected season:', detectedSeason);
         tmdbData = await getTMDBSeriesData(mapping.seriesId, detectedSeason.toString());
-      } else {
+      } else if (!tmdbData) {
         // Tentar busca automática pelo nome da pasta com temporada detectada
         console.log('🔍 Trying automatic search for:', folder.name, 'with season:', detectedSeason);
         tmdbData = await searchTMDBSeries(folder.name, detectedSeason);
