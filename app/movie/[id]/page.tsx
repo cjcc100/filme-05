@@ -263,7 +263,7 @@ async function searchTMDBMovie(query: string): Promise<any | null> {
   }
 }
 
-async function getStreamtapeFileId(movieTitle: string): Promise<string | null> {
+async function getStreamtapeFileId(movieTitle: string, tmdbId?: string): Promise<string | null> {
   try {
     const streamtapeLogin = config.streamtape.login;
     const streamtapeKey = config.streamtape.key;
@@ -285,6 +285,17 @@ async function getStreamtapeFileId(movieTitle: string): Promise<string | null> {
     if (data.status !== 200 || !data.result?.files) {
       console.error('Streamtape API - Invalid response');
       return null;
+    }
+    
+    // Se tiver tmdbId, tentar encontrar arquivo que começa com esse ID
+    if (tmdbId) {
+      for (const file of data.result.files) {
+        const fileName = file.name || '';
+        if (fileName.match(new RegExp(`^${tmdbId}`))) {
+          console.log('🎯 Found file by TMDb ID:', fileName, '->', file.linkid);
+          return file.linkid;
+        }
+      }
     }
     
     // Função de normalização de texto para matching com remoção de acentos
@@ -375,9 +386,9 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
       movieData = await getMovieData(movieId, true);
     }
     
-    // Buscar file ID do Streamtape baseado no título do filme/série
+    // Buscar file ID do Streamtape baseado no título do filme/série e ID do TMDb
     const movieTitle = movieData?.title || movieData?.name || movieData?.original_title || movieData?.original_name || '';
-    const streamtapeFileId = await getStreamtapeFileId(movieTitle);
+    const streamtapeFileId = await getStreamtapeFileId(movieTitle, movieId);
     finalFileId = streamtapeFileId;
   } else {
     // Se for file ID do Streamtape, tentar buscar dados do TMDb pelo nome do arquivo

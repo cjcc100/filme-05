@@ -292,6 +292,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       return {
         ...file,
         tmdbData,
+        tmdbId: tmdbData?.id || null, // Salvar o ID do TMDb para uso posterior
         title: tmdbData?.title || tmdbData?.name || file.name || 'Sem título',
         description: tmdbData?.overview || 'Sem descrição',
         linkid: file.linkid
