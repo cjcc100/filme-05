@@ -1,5 +1,5 @@
 import { config } from "@/lib/config";
-import { redirect } from "next/navigation";
+import StatsClient from "@/components/StatsClient";
 
 // Senha para acessar a página de estatísticas
 const STATS_PASSWORD = process.env.STATS_PASSWORD || "admin123";
@@ -143,6 +143,21 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
     return acc;
   }, {}) || {};
   
+  // Buscar snapshots anteriores
+  let snapshots: any[] = [];
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://filme-05.vercel.app';
+    const snapshotsRes = await fetch(`${baseUrl}/api/snapshot`, {
+      cache: 'no-store'
+    });
+    if (snapshotsRes.ok) {
+      const snapshotsData = await snapshotsRes.json();
+      snapshots = snapshotsData.snapshots || [];
+    }
+  } catch (error) {
+    console.error('Error fetching snapshots:', error);
+  }
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -169,9 +184,19 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           </div>
           
           <div className="bg-zinc-800 rounded-xl p-6 border border-zinc-700">
-            <div className="text-3xl font-bold text-yellow-500 mb-2">{systemFolders}</div>
-            <div className="text-zinc-400">Pastas de Sistema</div>
+            <div className="text-3xl font-bold text-yellow-500 mb-2">{snapshots.length}</div>
+            <div className="text-zinc-400">Snapshots Salvos</div>
           </div>
+        </div>
+        
+        {/* Snapshot Section */}
+        <div className="bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden mb-8">
+          <div className="p-6 border-b border-zinc-700">
+            <h2 className="text-xl font-bold text-white mb-2">Snapshots do Estado</h2>
+            <p className="text-zinc-400 text-sm">Salve snapshots para comparar e detectar arquivos excluídos</p>
+          </div>
+          
+          <StatsClient snapshots={snapshots} />
         </div>
         
         {/* Lista de arquivos */}
