@@ -19,9 +19,45 @@ async function getStreamtapeFiles() {
     if (!res.ok) return null;
     
     const data = await res.json();
-    if (data.status !== 200 || !data.result?.files) return null;
+    if (data.status !== 200 || !data.result) return null;
     
-    return data.result.files;
+    // Arquivos na raiz
+    const rootFiles = data.result.files || [];
+    
+    // Buscar arquivos dentro de cada pasta
+    const folders = data.result.folders || [];
+    const allFiles = [...rootFiles];
+    
+    // Para cada pasta, buscar seus arquivos
+    for (const folder of folders) {
+      if (folder.name === 'Subtitles' || folder.name === 'Thumbnails') continue;
+      
+      try {
+        const folderRes = await fetch(`${config.streamtape.apiUrl}/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}&folder=${folder.id}`, {
+          headers: {
+            'Accept': 'application/json',
+          },
+          next: { revalidate: 0 }
+        });
+        
+        if (folderRes.ok) {
+          const folderData = await folderRes.json();
+          if (folderData.status === 200 && folderData.result?.files) {
+            // Adicionar prefixo do nome da pasta aos arquivos
+            const folderFiles = folderData.result.files.map((file: any) => ({
+              ...file,
+              name: `${folder.name}/${file.name}`,
+              folderName: folder.name
+            }));
+            allFiles.push(...folderFiles);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching folder files:', folder.name, error);
+      }
+    }
+    
+    return allFiles;
   } catch (error) {
     console.error('Error fetching Streamtape files:', error);
     return null;
@@ -100,6 +136,13 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   ).length || 0;
   const contentFolders = totalFolders - systemFolders;
   
+  // Contar arquivos por pasta
+  const filesByFolder = files?.reduce((acc: any, file: any) => {
+    const folder = file.folderName || 'Raiz';
+    acc[folder] = (acc[folder] || 0) + 1;
+    return acc;
+  }, {}) || {};
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -170,7 +213,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
         <div className="bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden mt-8">
           <div className="p-6 border-b border-zinc-700">
             <h2 className="text-xl font-bold text-white">Séries e Novelas</h2>
-            <p className="text-zinc-400 text-sm mt-1">Todas as pastas de conteúdo</p>
+            <p className="text-zinc-400 text-sm mt-1">Todas as pastas de conteúdo com contagem de episódios</p>
           </div>
           
           <div className="overflow-x-auto">
@@ -179,7 +222,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">Nome</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">Folder ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">Arquivos</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">Episódios</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-700">
@@ -192,7 +235,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
                       {folder.id || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                      {folder.file_count || 'N/A'}
+                      {filesByFolder[folder.name] || 0}
                     </td>
                   </tr>
                 ))}
