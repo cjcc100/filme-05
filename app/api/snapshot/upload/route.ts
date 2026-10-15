@@ -105,3 +105,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to upload snapshot: ' + (error as Error).message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+    
+    const snapshots = await readSnapshotsFromGitHub();
+    const filteredSnapshots = snapshots.filter((s: any) => s.id !== parseInt(id));
+    
+    await writeSnapshotsToGitHub(filteredSnapshots);
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Snapshot excluído com sucesso'
+    });
+  } catch (error) {
+    console.error('Error deleting snapshot:', error);
+    return NextResponse.json({ error: 'Failed to delete snapshot: ' + (error as Error).message }, { status: 500 });
+  }
+}
