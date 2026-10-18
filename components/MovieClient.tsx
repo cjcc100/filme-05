@@ -275,6 +275,5 @@ export default function MovieClient({ movieData }: MovieClientProps) {
           )}
         </main>
       </div>
-    </>
   );
 }
