@@ -1,118 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import HeroCarousel from "../components/HeroCarousel";
+import { getCatalogMovies } from "../lib/catalog";
 
 // CJCCHUB - Plataforma de Streaming
 // Autor: juniorclaudinei350-sketch
 // Email: juniorclaudinei350@gmail.com
 
-async function getStreamtapeFiles() {
-  try {
-    const streamtapeLogin = '4db68bae5deec46b3a4b';
-    const streamtapeKey = 'a7azDDb68ACx8dP';
-    
-    const res = await fetch(`https://api.streamtape.com/file/listfolder?login=${streamtapeLogin}&key=${streamtapeKey}`, {
-      headers: {
-        'Accept': 'application/json',
-      },
-      next: { revalidate: 0 } // Sem cache por enquanto para testar
-    });
-    if (!res.ok) return null;
-    
-    const data = await res.json();
-    if (data.status !== 200 || !data.result?.files) return null;
-    
-    console.log('Streamtape files found:', data.result.files.length);
-    return data.result;
-  } catch (error) {
-    console.error('Error fetching Streamtape files:', error);
-    return null;
-  }
-}
-
-async function searchTMDBMovie(query: string) {
-  try {
-    const tmdbApiKey = '07c1396db17afadc024cbb5f0c3701c2';
-    
-    // Primeira tentativa: limpeza minimalista
-    let cleanQuery = query
-      .replace(/\.[^/.]+$/, '') // Apenas remover extensão
-      .replace(/[._-]/g, ' ') // Substituir separadores por espaço
-      .replace(/\s+/g, ' ') // Remover espaços extras
-      .trim();
-    
-    if (cleanQuery.length < 3) return null;
-    
-    console.log('Searching TMDb (attempt 1):', cleanQuery);
-    
-    let searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
-      next: { revalidate: 600 }
-    });
-    
-    if (searchRes.ok) {
-      const searchData = await searchRes.json();
-      if (searchData.results && searchData.results.length > 0) {
-        console.log('TMDb found (attempt 1):', searchData.results[0].title);
-        return searchData.results[0];
-      }
-    }
-    
-    // Segunda tentativa: remover anos e números
-    cleanQuery = query
-      .replace(/\.[^/.]+$/, '')
-      .replace(/\d{4}/g, '') // Remover anos de 4 dígitos
-      .replace(/[._-]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    if (cleanQuery.length < 3) return null;
-    
-    console.log('Searching TMDb (attempt 2):', cleanQuery);
-    
-    searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=pt-BR&query=${encodeURIComponent(cleanQuery)}`, {
-      next: { revalidate: 600 }
-    });
-    
-    if (searchRes.ok) {
-      const searchData = await searchRes.json();
-      if (searchData.results && searchData.results.length > 0) {
-        console.log('TMDb found (attempt 2):', searchData.results[0].title);
-        return searchData.results[0];
-      }
-    }
-    
-    console.log('TMDb no results for:', query);
-    return null;
-  } catch (error) {
-    console.error('Error searching TMDb:', error);
-    return null;
-  }
-}
-
 export default async function Home() {
-  const streamtapeData = await getStreamtapeFiles();
-  
-  // Usar arquivos do Streamtape
-  const files = streamtapeData?.files || [];
-    
-  // Enriquecer arquivos com dados TMDb
-  const enrichedFiles = await Promise.all(
-    files.map(async (file: any) => {
-      const fileName = file.name || '';
-      const tmdbData = fileName ? await searchTMDBMovie(fileName) : null;
-      
-      return {
-        ...file,
-        tmdbData,
-        title: tmdbData?.title || file.name || 'Sem título',
-        description: tmdbData?.overview || 'Sem descrição',
-        linkid: file.linkid
-      };
-    })
-  );
-  
-  // SEMPRE usar arquivos do Streamtape, mesmo sem dados TMDb
-  const movies = enrichedFiles;
+  const movies = await getCatalogMovies();
   const featuredMovies = movies.slice(0, 5);
   
   return (
@@ -145,8 +41,7 @@ export default async function Home() {
         <section id="filmes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-2xl font-bold text-white mb-8">Filmes Populares</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {movies.map((movie: any) => {
-              const isStreamtape = movie.linkid;
+            {movies.map((movie) => {
               const tmdbData = movie.tmdbData;
               
               const imageUrl = tmdbData?.poster_path
@@ -155,16 +50,15 @@ export default async function Home() {
                 ? `https://image.tmdb.org/t/p/w500${tmdbData.backdrop_path}`
                 : null;
               
-              const title = tmdbData?.title || tmdbData?.name || movie.title || movie.name || 'Sem título';
-              const year = tmdbData?.release_date?.split('-')[0] || movie.release_date?.split('-')[0] || movie.year || 'N/A';
-              const rating = tmdbData?.vote_average?.toFixed(1) || movie.vote_average?.toFixed(1) || 'N/A';
-              const description = tmdbData?.overview || movie.description || movie.overview || 'Filme disponível para assistir';
+              const title = tmdbData?.title || tmdbData?.name || movie.title || 'Sem título';
+              const year = tmdbData?.release_date?.split('-')[0] || 'N/A';
+              const rating = tmdbData?.vote_average?.toFixed(1) || 'N/A';
 
-              const movieLink = movie.linkid ? `/movie/${movie.linkid}` : (tmdbData?.id ? `/movie/${tmdbData.id}` : '#');
+              const movieLink = tmdbData?.id ? `/movie/${tmdbData.id}` : '#';
 
               return (
                 <Link
-                  key={movie.linkid || movie.id}
+                  key={movie.fileName}
                   href={movieLink}
                   className="group relative bg-zinc-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/20"
                 >
