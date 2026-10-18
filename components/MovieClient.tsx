@@ -43,7 +43,6 @@ interface MovieData {
 
 interface MovieClientProps {
   movieData: MovieData;
-  fileId: string | null;
 }
 
 export default function MovieClient({ movieData }: MovieClientProps) {
