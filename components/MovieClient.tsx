@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import VideoPlayer from './VideoPlayer';
 
 interface MovieData {
   id: number;
@@ -47,9 +46,7 @@ interface MovieClientProps {
   fileId: string | null;
 }
 
-export default function MovieClient({ movieData, fileId }: MovieClientProps) {
-  const [showPlayer, setShowPlayer] = useState(false);
-
+export default function MovieClient({ movieData }: MovieClientProps) {
   if (!movieData) return null;
 
   const title = movieData.title || movieData.name || movieData.original_title || movieData.original_name || 'Sem título';
@@ -74,15 +71,7 @@ export default function MovieClient({ movieData, fileId }: MovieClientProps) {
   const revenue = movieData.revenue ? `$${movieData.revenue.toLocaleString()}` : 'N/A';
 
   return (
-    <>
-      {showPlayer && fileId && (
-        <VideoPlayer 
-          fileId={fileId} 
-          onClose={() => setShowPlayer(false)} 
-        />
-      )}
-      
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <header className="sticky top-0 z-50 bg-zinc-900/30 backdrop-blur-md border-b border-zinc-800/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -173,28 +162,6 @@ export default function MovieClient({ movieData, fileId }: MovieClientProps) {
                   </div>
                   
                   <div className="flex gap-4">
-                    {fileId ? (
-                      <button 
-                        onClick={() => setShowPlayer(true)}
-                        className="bg-gradient-to-r from-red-600 to-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-orange-600 transition-all duration-300 flex items-center gap-2 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"
-                      >
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                        Assistir
-                      </button>
-                    ) : (
-                      <button 
-                        disabled
-                        className="bg-zinc-600 text-zinc-400 px-8 py-3 rounded-lg font-semibold cursor-not-allowed flex items-center gap-2"
-                      >
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                        Indisponível
-                      </button>
-                    )}
-                    
                     <button className="bg-zinc-600/80 text-white px-8 py-3 rounded-lg font-semibold hover:bg-zinc-600 transition-colors flex items-center gap-2">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
