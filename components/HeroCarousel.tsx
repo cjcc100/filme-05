@@ -18,7 +18,7 @@ interface Movie {
     overview?: string;
     backdrop_path?: string;
     poster_path?: string;
-  };
+  } | null;
 }
 
 interface HeroCarouselProps {
