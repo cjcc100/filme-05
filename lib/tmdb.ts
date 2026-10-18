@@ -18,7 +18,7 @@ function parseFileName(fileName: string) {
   const year = yearMatch?.[1];
   const query = withoutExt
     .replace(/[()[\]]/g, ' ')
-    .replace(/\d{4}/g, ' ')
+    .replace(/\(\d{4}\)/g, ' ') // Remove ano entre parênteses
     .replace(/[._-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -26,10 +26,10 @@ function parseFileName(fileName: string) {
   return { query, year, title: withoutExt };
 }
 
-async function searchByQuery(query: string, year?: string) {
+async function searchByQuery(query: string, year?: string, language: string = 'pt-BR') {
   const url = new URL(`${config.tmdb.baseUrl}/search/movie`);
   url.searchParams.set('api_key', config.tmdb.apiKey);
-  url.searchParams.set('language', 'pt-BR');
+  url.searchParams.set('language', language);
   url.searchParams.set('query', query);
   if (year) {
     url.searchParams.set('year', year);
@@ -71,7 +71,7 @@ export async function searchTMDBMovie(fileName: string): Promise<TmdbMovieSearch
   }
 }
 
-export async function getMovieData(movieId: string) {
+export async function getMovieData(movieId: string): Promise<TmdbMovieSearchResult | null> {
   try {
     const res = await fetch(
       `${config.tmdb.baseUrl}/movie/${movieId}?api_key=${config.tmdb.apiKey}&language=pt-BR`,
