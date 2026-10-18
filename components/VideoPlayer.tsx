@@ -1,20 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getStreamUrl } from '@/lib/stream';
 
 interface VideoPlayerProps {
-  fileId: string;
+  fileName: string;
   onClose: () => void;
 }
 
-export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
+export default function VideoPlayer({ fileName, onClose }: VideoPlayerProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const streamUrl = getStreamUrl(fileName);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  // Fechar com tecla ESC
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isVisible) {
@@ -38,7 +39,7 @@ export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-black transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] bg-black/90 transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={handleClose}
@@ -50,24 +51,16 @@ export default function VideoPlayer({ fileId, onClose }: VideoPlayerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative w-full max-w-6xl mx-4">
-          {/* Video Container */}
-          <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-            <iframe
-              src={`https://streamtape.com/e/${fileId}?autoplay=true`}
-              loading="lazy"
-              style={{
-                border: 'none',
-                position: 'absolute',
-                top: '0',
-                height: '100%',
-                width: '100%',
-              }}
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-              allowFullScreen={true}
+          <div className="relative w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden">
+            <video
+              src={streamUrl}
+              className="absolute inset-0 h-full w-full bg-black"
+              controls
+              autoPlay
+              playsInline
             />
           </div>
 
-          {/* Close Button - Abaixo do player */}
           <button
             onClick={handleClose}
             className="mt-4 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 mx-auto hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"

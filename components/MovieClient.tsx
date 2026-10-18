@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import VideoPlayer from './VideoPlayer';
+import WatchButton from './WatchButton';
 
 interface MovieData {
   id: number;
@@ -41,12 +41,10 @@ interface MovieData {
 
 interface MovieClientProps {
   movieData: MovieData;
-  fileId: string | null;
+  fileName: string | null;
 }
 
-export default function MovieClient({ movieData, fileId }: MovieClientProps) {
-  const [showPlayer, setShowPlayer] = useState(false);
-
+export default function MovieClient({ movieData, fileName }: MovieClientProps) {
   if (!movieData) return null;
 
   const title = movieData.title || movieData.original_title;
@@ -54,7 +52,7 @@ export default function MovieClient({ movieData, fileId }: MovieClientProps) {
   const rating = movieData.vote_average?.toFixed(1) || 'N/A';
   const duration = movieData.runtime ? `${Math.floor(movieData.runtime / 60)}h ${movieData.runtime % 60}m` : 'N/A';
   const genres = movieData.genres?.map(g => g.name).join(', ') || 'N/A';
-  const voteCount = movieData.vote_count?.toLocaleString() || '0';
+  const voteCount = movieData.vote_count?.toLocaleString('pt-BR') || '0';
   
   const backdropUrl = movieData.backdrop_path
     ? `https://image.tmdb.org/t/p/original${movieData.backdrop_path}`
@@ -64,18 +62,11 @@ export default function MovieClient({ movieData, fileId }: MovieClientProps) {
     ? `https://image.tmdb.org/t/p/w500${movieData.poster_path}`
     : null;
 
-  const budget = movieData.budget ? `$${movieData.budget.toLocaleString()}` : 'N/A';
-  const revenue = movieData.revenue ? `$${movieData.revenue.toLocaleString()}` : 'N/A';
+  const budget = movieData.budget ? `$${movieData.budget.toLocaleString('pt-BR')}` : 'N/A';
+  const revenue = movieData.revenue ? `$${movieData.revenue.toLocaleString('pt-BR')}` : 'N/A';
 
   return (
     <>
-      {showPlayer && fileId && (
-        <VideoPlayer 
-          fileId={fileId} 
-          onClose={() => setShowPlayer(false)} 
-        />
-      )}
-      
       <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
         <header className="sticky top-0 z-50 bg-zinc-900/30 backdrop-blur-md border-b border-zinc-800/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -158,16 +149,8 @@ export default function MovieClient({ movieData, fileId }: MovieClientProps) {
                   </div>
                   
                   <div className="flex gap-4">
-                    {fileId ? (
-                      <button 
-                        onClick={() => setShowPlayer(true)}
-                        className="bg-gradient-to-r from-red-600 to-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-orange-600 transition-all duration-300 flex items-center gap-2 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"
-                      >
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                        Assistir
-                      </button>
+                    {fileName ? (
+                      <WatchButton fileName={fileName} />
                     ) : (
                       <button 
                         disabled
