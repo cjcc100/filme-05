@@ -24,13 +24,25 @@ export default function AuthPage() {
     setError('');
 
     try {
-      await base44.auth.loginViaEmailPassword(email, password);
-      console.log('Login realizado, aguardando token ser salvo...');
+      const result = await base44.auth.loginViaEmailPassword(email, password);
+      console.log('Login realizado, resultado:', result);
+      
+      // Verificar se o token foi salvo no localStorage
+      const token = localStorage.getItem('base44_access_token');
+      console.log('Token no localStorage:', token);
+      
+      // Se o resultado tiver token, salvar manualmente
+      if (result && result.access_token) {
+        console.log('Salvando token manualmente...');
+        base44.auth.setToken(result.access_token, true);
+      }
+      
       // Aguardar um momento para garantir que o token foi salvo
       await new Promise(resolve => setTimeout(resolve, 500));
       console.log('Redirecionando para home...');
       router.push('/');
     } catch (err: any) {
+      console.error('Erro no login:', err);
       setError('Email ou senha inválidos');
     } finally {
       setLoading(false);
@@ -62,14 +74,19 @@ export default function AuthPage() {
     try {
       // 2. Confirma o código
       const result = await base44.auth.verifyOtp({ email, otpCode });
+      console.log('Resultado verifyOtp:', result);
+      
       if (result?.access_token) {
-        base44.auth.setToken(result.access_token);
+        console.log('Salvando token manualmente...');
+        base44.auth.setToken(result.access_token, true);
+        
         // 3. Salva o nome completo
         await base44.auth.updateMe({ nome_completo: name });
         alert('Conta criada com sucesso!');
         router.push('/');
       }
     } catch (err: any) {
+      console.error('Erro ao verificar OTP:', err);
       setError('Código inválido ou expirado');
     } finally {
       setLoading(false);
