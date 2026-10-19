@@ -25,7 +25,7 @@ export function getCatalogFileNames(): CatalogEntry[] {
 export async function getCatalogMovies() {
   const entries = getCatalogFileNames();
 
-  return Promise.all(
+  const movies = await Promise.all(
     entries.map(async (entry) => {
       let tmdbData = null;
 
@@ -48,6 +48,9 @@ export async function getCatalogMovies() {
       };
     })
   );
+
+  // Inverter ordem para que os novos filmes apareçam primeiro
+  return movies.reverse();
 }
 
 export function findCatalogFileByTmdbId(
