@@ -86,7 +86,7 @@ export default async function SeriesPage() {
               <Link href="#" className="text-zinc-300 hover:text-white transition-colors">Minha Lista</Link>
             </nav>
             <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
-              Assinar - Planos
+              Entrar
             </Link>
           </div>
         </div>
