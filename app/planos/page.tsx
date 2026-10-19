@@ -2,18 +2,50 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function AuthPage() {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Apenas visual por enquanto - sem integração com banco de dados
-    console.log('Form submitted:', { isLogin, email, password, name });
-    alert('Funcionalidade de autenticação será implementada posteriormente com banco de dados.');
+    setLoading(true);
+    setError('');
+
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const body = isLogin ? { email, password } : { name, email, password };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro na autenticação');
+      }
+
+      // Salvar usuário no localStorage
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      alert(isLogin ? 'Login realizado com sucesso!' : 'Conta criada com sucesso!');
+      router.push('/');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,6 +83,12 @@ export default function AuthPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
               {!isLogin && (
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-zinc-300 mb-2">
@@ -64,6 +102,7 @@ export default function AuthPage() {
                     className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                     placeholder="Seu nome"
                     required
+                    disabled={loading}
                   />
                 </div>
               )}
@@ -80,6 +119,7 @@ export default function AuthPage() {
                   className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                   placeholder="seu@email.com"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -95,6 +135,7 @@ export default function AuthPage() {
                   className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -115,9 +156,10 @@ export default function AuthPage() {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                {isLogin ? 'Entrar' : 'Criar conta'}
+                {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar conta')}
               </button>
             </form>
 
