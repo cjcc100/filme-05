@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se o usuário já existe
-    const existingUsers = await base44.table('users').select('*').eq('email', email);
+    const existingUsers = await base44.entities.User.filter({ email });
     
     if (existingUsers && existingUsers.length > 0) {
       return NextResponse.json(
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar novo usuário
-    const newUser = await base44.table('users').insert({
+    const newUser = await base44.entities.User.create({
       name,
       email,
       password, // Em produção, deve-se hashear a senha

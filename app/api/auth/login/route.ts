@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuário pelo e-mail
-    const users = await base44.table('users').select('*').eq('email', email);
+    const users = await base44.entities.User.filter({ email });
 
     if (!users || users.length === 0) {
       return NextResponse.json(
