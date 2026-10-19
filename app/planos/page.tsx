@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@base44/sdk';
+
+const base44 = createClient({ appId: "6ad60db65ef6337559a9c1dc" });
 
 export default function AuthPage() {
   const router = useRouter();
@@ -10,43 +13,79 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showOtp, setShowOtp] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const body = isLogin ? { email, password } : { name, email, password };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.details || 'Erro na autenticação');
-      }
-
-      // Salvar usuário no localStorage
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      alert(isLogin ? 'Login realizado com sucesso!' : 'Conta criada com sucesso!');
+      await base44.auth.loginViaEmailPassword(email, password);
+      alert('Login realizado com sucesso!');
       router.push('/');
     } catch (err: any) {
-      setError(err.message);
+      setError('Email ou senha inválidos');
     } finally {
       setLoading(false);
     }
   };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // 1. Cria a conta (envia código de verificação por email)
+      await base44.auth.register({ email, password });
+      setShowOtp(true);
+      setError('');
+    } catch (err: any) {
+      setError('Erro ao criar conta. Verifique o email.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // 2. Confirma o código
+      const result = await base44.auth.verifyOtp({ email, otpCode });
+      if (result?.access_token) {
+        base44.auth.setToken(result.access_token);
+        // 3. Salva o nome completo
+        await base44.auth.updateMe({ nome_completo: name });
+        alert('Conta criada com sucesso!');
+        router.push('/');
+      }
+    } catch (err: any) {
+      setError('Código inválido ou expirado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      await base44.auth.resendOtp(email);
+      alert('Código reenviado para o email');
+    } catch (err: any) {
+      setError('Erro ao reenviar código');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = isLogin ? handleLogin : (showOtp ? handleVerifyOtp : handleRegister);
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
@@ -89,7 +128,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {!isLogin && (
+              {!isLogin && !showOtp && (
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-zinc-300 mb-2">
                     Nome completo
@@ -107,37 +146,71 @@ export default function AuthPage() {
                 </div>
               )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
-                  E-mail
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                  placeholder="seu@email.com"
-                  required
-                  disabled={loading}
-                />
-              </div>
+              {!showOtp && (
+                <>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
+                      E-mail
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                      placeholder="seu@email.com"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
-                  Senha
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                  placeholder="••••••••"
-                  required
-                  disabled={loading}
-                />
-              </div>
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
+                      Senha
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                      placeholder="••••••••"
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </>
+              )}
+
+              {showOtp && (
+                <div>
+                  <label htmlFor="otp" className="block text-sm font-medium text-zinc-300 mb-2">
+                    Código de verificação (6 dígitos)
+                  </label>
+                  <input
+                    id="otp"
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                    className="w-full bg-zinc-700/50 border border-zinc-600 text-white placeholder-zinc-400 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-center text-2xl tracking-widest"
+                    placeholder="000000"
+                    required
+                    disabled={loading}
+                  />
+                  <p className="text-zinc-400 text-sm mt-2">
+                    Enviamos um código de 6 dígitos para o seu email.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="text-red-500 hover:text-red-400 text-sm mt-2 transition-colors disabled:opacity-50"
+                  >
+                    Não recebeu o código? Reenviar
+                  </button>
+                </div>
+              )}
 
               {isLogin && (
                 <div className="flex items-center justify-between">
@@ -159,7 +232,7 @@ export default function AuthPage() {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-red-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                {loading ? 'Carregando...' : (isLogin ? 'Entrar' : 'Criar conta')}
+                {loading ? 'Carregando...' : (showOtp ? 'Verificar código' : (isLogin ? 'Entrar' : 'Criar conta'))}
               </button>
             </form>
 
