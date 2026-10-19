@@ -15,11 +15,26 @@ export default function UserMenu() {
     checkUser();
   }, []);
 
+  // Verificar usuário sempre que o componente for montado
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkUser();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const checkUser = async () => {
     try {
+      console.log('Verificando usuário...');
       const userData = await base44.auth.me();
+      console.log('Usuário encontrado:', userData);
       setUser(userData);
     } catch (error) {
+      console.log('Usuário não logado:', error);
       setUser(null);
     } finally {
       setLoading(false);

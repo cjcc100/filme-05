@@ -25,7 +25,10 @@ export default function AuthPage() {
 
     try {
       await base44.auth.loginViaEmailPassword(email, password);
-      alert('Login realizado com sucesso!');
+      console.log('Login realizado, aguardando token ser salvo...');
+      // Aguardar um momento para garantir que o token foi salvo
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Redirecionando para home...');
       router.push('/');
     } catch (err: any) {
       setError('Email ou senha inválidos');

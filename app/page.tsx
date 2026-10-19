@@ -32,7 +32,7 @@ export default async function Home() {
             </nav>
             <div className="flex items-center gap-4">
               <SearchBar movies={movies} />
-              <UserMenu />
+              <UserMenu key="user-menu" />
             </div>
           </div>
         </div>
