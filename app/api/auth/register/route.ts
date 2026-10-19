@@ -15,25 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se o usuário já existe
-    console.log('Verificando se usuário já existe...');
-    const existingUsers = await base44.entities.User.filter({ email });
-    console.log('Usuários existentes:', existingUsers);
-    
-    if (existingUsers && existingUsers.length > 0) {
-      return NextResponse.json(
-        { error: 'E-mail já cadastrado' },
-        { status: 400 }
-      );
-    }
-
-    // Criar novo usuário
+    // Criar novo usuário - sem created_at (Base44 pode gerar automaticamente)
     console.log('Criando novo usuário...');
     const newUser = await base44.entities.User.create({
       name,
       email,
-      password, // Em produção, deve-se hashear a senha
-      created_at: new Date().toISOString()
+      password // Em produção, deve-se hashear a senha
     });
     console.log('Usuário criado:', newUser);
 
