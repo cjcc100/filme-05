@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import HeroCarousel from "../components/HeroCarousel";
 import SearchBar from "../components/SearchBar";
+import UserMenu from "../components/UserMenu";
 import { getCatalogMovies } from "../lib/catalog";
 
 // CJCCHUB - Plataforma de Streaming
@@ -31,9 +32,7 @@ export default async function Home() {
             </nav>
             <div className="flex items-center gap-4">
               <SearchBar movies={movies} />
-              <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium whitespace-nowrap">
-                Entrar
-              </Link>
+              <UserMenu />
             </div>
           </div>
         </div>

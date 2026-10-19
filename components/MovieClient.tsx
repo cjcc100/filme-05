@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import WatchButton from './WatchButton';
+import UserMenu from './UserMenu';
 
 interface MovieData {
   id: number;
@@ -82,6 +83,7 @@ export default function MovieClient({ movieData, fileName }: MovieClientProps) {
                 <Link href="/#filmes" className="text-zinc-300 hover:text-white transition-colors">Filmes</Link>
                 <Link href="/#series" className="text-zinc-300 hover:text-white transition-colors">Séries</Link>
               </nav>
+              <UserMenu />
             </div>
           </div>
         </header>
