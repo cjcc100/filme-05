@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import HeroCarousel from "../components/HeroCarousel";
+import SearchBar from "../components/SearchBar";
 import { getCatalogMovies } from "../lib/catalog";
 
 // CJCCHUB - Plataforma de Streaming
@@ -15,7 +16,7 @@ export default async function Home() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       <header className="sticky top-0 z-50 bg-zinc-900/30 backdrop-blur-md border-b border-zinc-800/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-16 gap-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">C</span>
@@ -28,9 +29,12 @@ export default async function Home() {
               <Link href="/series" className="text-zinc-300 hover:text-white transition-colors">Séries</Link>
               <Link href="#" className="text-zinc-300 hover:text-white transition-colors">Minha Lista</Link>
             </nav>
-            <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
-              Assinar - Planos
-            </Link>
+            <div className="flex items-center gap-4">
+              <SearchBar movies={movies} />
+              <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium whitespace-nowrap">
+                Assinar - Planos
+              </Link>
+            </div>
           </div>
         </div>
       </header>
