@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import UserMenu from "../components/UserMenu";
+import UserMenu from "../../components/UserMenu";
 
 async function getStreamtapeFolders() {
   try {
