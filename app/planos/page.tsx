@@ -33,7 +33,7 @@ export default function AuthPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro na autenticação');
+        throw new Error(data.error || data.details || 'Erro na autenticação');
       }
 
       // Salvar usuário no localStorage

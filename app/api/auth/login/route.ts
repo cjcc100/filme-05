@@ -6,6 +6,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, password } = body;
 
+    console.log('Tentando fazer login:', { email });
+
     if (!email || !password) {
       return NextResponse.json(
         { error: 'E-mail e senha são obrigatórios' },
@@ -14,7 +16,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuário pelo e-mail
+    console.log('Buscando usuário...');
     const users = await base44.entities.User.filter({ email });
+    console.log('Usuários encontrados:', users);
 
     if (!users || users.length === 0) {
       return NextResponse.json(
@@ -40,10 +44,11 @@ export async function POST(request: NextRequest) {
       { message: 'Login realizado com sucesso', user: userWithoutPassword },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao fazer login:', error);
+    console.error('Detalhes do erro:', JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: 'Erro ao fazer login' },
+      { error: 'Erro ao fazer login', details: error.message || error.toString() },
       { status: 500 }
     );
   }
