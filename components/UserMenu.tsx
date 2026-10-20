@@ -65,7 +65,7 @@ export default function UserMenu() {
 
   if (!user) {
     return (
-      <Link href="/planos" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium whitespace-nowrap">
+      <Link href="/login" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium whitespace-nowrap">
         Entrar
       </Link>
     );

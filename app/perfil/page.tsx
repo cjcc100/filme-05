@@ -22,7 +22,7 @@ export default function PerfilPage() {
       setUser(userData);
       setName(userData.nome_completo || '');
     } catch (error) {
-      window.location.href = '/planos';
+      window.location.href = '/login';
     } finally {
       setLoading(false);
     }

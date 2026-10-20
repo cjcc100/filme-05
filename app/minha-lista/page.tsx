@@ -166,7 +166,7 @@ export default function MinhaLista() {
             </p>
             <div className="flex gap-4">
               <Link
-                href="/planos"
+                href="/login"
                 className="px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
               >
                 Fazer Login
