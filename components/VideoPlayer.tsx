@@ -1,20 +1,109 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getStreamUrl } from '@/lib/stream';
+import { saveWatchHistory, updateWatchPosition } from '@/lib/history';
 
 interface VideoPlayerProps {
   fileName: string;
+  movieTitle?: string;
+  moviePoster?: string;
+  tmdbId?: string;
   onClose: () => void;
 }
 
-export default function VideoPlayer({ fileName, onClose }: VideoPlayerProps) {
+export default function VideoPlayer({ 
+  fileName, 
+  movieTitle = 'Sem título',
+  moviePoster = '',
+  tmdbId,
+  onClose 
+}: VideoPlayerProps) {
   const [isVisible, setIsVisible] = useState(false);
   const streamUrl = getStreamUrl(fileName);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Tracking de progresso do vídeo
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let saveInterval: NodeJS.Timeout;
+
+    const handleTimeUpdate = () => {
+      const currentTime = video.currentTime;
+      const duration = video.duration;
+
+      if (duration > 0) {
+        // Salvar posição a cada 10 segundos
+        console.log(`Progresso: ${currentTime}s / ${duration}s`);
+      }
+    };
+
+    const handlePlay = () => {
+      console.log('Video iniciado');
+      // Iniciar timer para salvar posição
+      saveInterval = setInterval(() => {
+        if (video.duration > 0) {
+          updateWatchPosition(
+            movieTitle,
+            Math.floor(video.currentTime),
+            Math.floor(video.duration),
+            tmdbId
+          );
+        }
+      }, 10000); // Salva a cada 10 segundos
+    };
+
+    const handlePause = () => {
+      console.log('Video pausado');
+      if (saveInterval) {
+        clearInterval(saveInterval);
+      }
+      // Salvar posição ao pausar
+      if (video.duration > 0) {
+        updateWatchPosition(
+          movieTitle,
+          Math.floor(video.currentTime),
+          Math.floor(video.duration),
+          tmdbId
+        );
+      }
+    };
+
+    const handleEnded = () => {
+      console.log('Video finalizado');
+      if (saveInterval) {
+        clearInterval(saveInterval);
+      }
+      // Marcar como assistido
+      updateWatchPosition(
+        movieTitle,
+        Math.floor(video.duration),
+        Math.floor(video.duration),
+        tmdbId
+      );
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
+      if (saveInterval) {
+        clearInterval(saveInterval);
+      }
+    };
+  }, [movieTitle]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -32,7 +121,18 @@ export default function VideoPlayer({ fileName, onClose }: VideoPlayerProps) {
     };
   }, [isVisible]);
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // Salvar posição final antes de fechar
+    const video = videoRef.current;
+    if (video && video.duration > 0) {
+      await updateWatchPosition(
+        movieTitle,
+        Math.floor(video.currentTime),
+        Math.floor(video.duration),
+        tmdbId
+      );
+    }
+
     setIsVisible(false);
     setTimeout(() => onClose(), 300);
   };
@@ -53,11 +153,29 @@ export default function VideoPlayer({ fileName, onClose }: VideoPlayerProps) {
         <div className="relative w-full max-w-6xl mx-4">
           <div className="relative w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden">
             <video
+              ref={videoRef}
               src={streamUrl}
               className="absolute inset-0 h-full w-full bg-black"
               controls
               autoPlay
               playsInline
+              onLoadedMetadata={async () => {
+                // Salvar histórico inicial quando o vídeo carregar
+                const video = videoRef.current;
+                if (video) {
+                  console.log('Vídeo carregado, duração:', video.duration);
+                  console.log('Salvando histórico com tmdb_id:', tmdbId);
+                  await saveWatchHistory({
+                    titulo: movieTitle,
+                    capa_url: moviePoster,
+                    duracao_total: Math.floor(video.duration),
+                    posicao_segundos: 0,
+                    status: 'assistindo',
+                    ultimo_acesso: new Date().toISOString(),
+                    tmdb_id: tmdbId,
+                  });
+                }
+              }}
             />
           </div>
 

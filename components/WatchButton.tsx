@@ -5,10 +5,19 @@ import VideoPlayer from './VideoPlayer';
 
 interface WatchButtonProps {
   fileName: string;
+  movieTitle?: string;
+  moviePoster?: string;
+  tmdbId?: string;
   className?: string;
 }
 
-export default function WatchButton({ fileName, className }: WatchButtonProps) {
+export default function WatchButton({ 
+  fileName, 
+  movieTitle, 
+  moviePoster, 
+  tmdbId,
+  className 
+}: WatchButtonProps) {
   const [playingFile, setPlayingFile] = useState<string | null>(null);
 
   return (
@@ -28,7 +37,13 @@ export default function WatchButton({ fileName, className }: WatchButtonProps) {
       </button>
 
       {playingFile && (
-        <VideoPlayer fileName={playingFile} onClose={() => setPlayingFile(null)} />
+        <VideoPlayer 
+          fileName={playingFile} 
+          movieTitle={movieTitle}
+          moviePoster={moviePoster}
+          tmdbId={tmdbId}
+          onClose={() => setPlayingFile(null)} 
+        />
       )}
     </>
   );

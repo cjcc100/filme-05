@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import WatchButton from './WatchButton';
+import Link from 'next/link';
 
 interface Movie {
   id?: number;
@@ -74,16 +74,19 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
         {movies.map((movie, index) => {
           const isActive = index === currentIndex;
           const movieTmdbData = movie.tmdbData;
-          
+
           const movieImageUrl = movieTmdbData?.backdrop_path
             ? `https://image.tmdb.org/t/p/original${movieTmdbData.backdrop_path}`
             : movieTmdbData?.poster_path
             ? `https://image.tmdb.org/t/p/original${movieTmdbData.poster_path}`
             : null;
 
+          const movieLink = movieTmdbData?.id ? `/movie/${movieTmdbData.id}` : '#';
+
           return (
-            <div
+            <Link
               key={movie.fileName || movie.id}
+              href={movieLink}
               className={`absolute inset-0 transition-opacity duration-500 ${
                 isActive ? 'opacity-100' : 'opacity-0'
               }`}
@@ -99,14 +102,18 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-red-900 via-zinc-800 to-zinc-900" />
               )}
-            </div>
+            </Link>
           );
         })}
       </div>
 
       {/* Navigation Buttons */}
       <button
-        onClick={prevSlide}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          prevSlide();
+        }}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +122,11 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
       </button>
 
       <button
-        onClick={nextSlide}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          nextSlide();
+        }}
         className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +139,11 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
         {movies.map((_, index) => (
           <button
             key={index}
-            onClick={() => goToSlide(index)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              goToSlide(index);
+            }}
             className={`w-3 h-3 rounded-full transition-colors ${
               index === currentIndex ? 'bg-white' : 'bg-white/50'
             }`}
@@ -137,7 +152,13 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
       </div>
 
       {/* Movie Info */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div
+        className="absolute bottom-0 left-0 right-0 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
         <div className="max-w-2xl">
           <span className="inline-block bg-red-600 text-white text-sm font-medium px-3 py-1 rounded-full mb-4">
             Destaque
@@ -149,25 +170,33 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
             {overview}
           </p>
           <div className="flex gap-4">
-            {currentMovie.fileName ? (
-              <WatchButton
-                fileName={currentMovie.fileName}
+            {tmdbData?.id ? (
+              <Link
+                href={`/movie/${tmdbData.id}`}
                 className="bg-white text-zinc-900 px-6 py-3 rounded-lg font-semibold hover:bg-zinc-100 transition-colors flex items-center gap-2"
-              />
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                </svg>
+                Ver Detalhes
+              </Link>
             ) : (
               <button className="bg-white text-zinc-900 px-6 py-3 rounded-lg font-semibold hover:bg-zinc-100 transition-colors flex items-center gap-2">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                 </svg>
-                Assistir
+                Ver Detalhes
               </button>
             )}
-            <button className="bg-zinc-600/80 text-white px-6 py-3 rounded-lg font-semibold hover:bg-zinc-600 transition-colors flex items-center gap-2">
+            <Link
+              href="/minha-lista"
+              className="bg-zinc-600/80 text-white px-6 py-3 rounded-lg font-semibold hover:bg-zinc-600 transition-colors flex items-center gap-2"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Minha Lista
-            </button>
+            </Link>
           </div>
         </div>
       </div>

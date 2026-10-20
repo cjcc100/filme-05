@@ -152,7 +152,12 @@ export default function MovieClient({ movieData, fileName }: MovieClientProps) {
                   
                   <div className="flex gap-4">
                     {fileName ? (
-                      <WatchButton fileName={fileName} />
+                      <WatchButton 
+                        fileName={fileName} 
+                        movieTitle={title}
+                        moviePoster={posterUrl || ''}
+                        tmdbId={String(movieData.id)}
+                      />
                     ) : (
                       <button 
                         disabled

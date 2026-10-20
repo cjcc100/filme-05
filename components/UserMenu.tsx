@@ -29,15 +29,17 @@ export default function UserMenu() {
 
   const checkUser = async () => {
     try {
-      console.log('Verificando usuário...');
       const token = localStorage.getItem('base44_access_token');
-      console.log('Token no localStorage:', token ? 'Presente' : 'Ausente');
-      
+
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       const userData = await base44.auth.me();
-      console.log('Usuário encontrado:', userData);
       setUser(userData);
     } catch (error) {
-      console.log('Usuário não logado:', error);
       setUser(null);
     } finally {
       setLoading(false);
