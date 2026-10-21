@@ -15,6 +15,8 @@ import MoviesGrid from "../components/MoviesGrid";
 export default function Home() {
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const moviesPerPage = 30;
 
   useEffect(() => {
     loadMovies();
@@ -33,6 +35,17 @@ export default function Home() {
   };
 
   const featuredMovies = movies.slice(0, 5);
+
+  // Cálculos de paginação
+  const totalPages = Math.ceil(movies.length / moviesPerPage);
+  const startIndex = (currentPage - 1) * moviesPerPage;
+  const endIndex = startIndex + moviesPerPage;
+  const currentMovies = movies.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (loading) {
     return (
@@ -74,7 +87,59 @@ export default function Home() {
 
         <section id="filmes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-2xl font-bold text-white mb-8">Filmes Populares</h2>
-          <MoviesGrid movies={movies} />
+          <MoviesGrid movies={currentMovies} />
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                // Mostrar apenas algumas páginas para não encher
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        currentPage === page
+                          ? 'bg-red-600 text-white'
+                          : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                // Mostrar "..." para páginas ocultas
+                if (
+                  (page === currentPage - 2 && page > 1) ||
+                  (page === currentPage + 2 && page < totalPages)
+                ) {
+                  return <span key={page} className="text-zinc-400">...</span>;
+                }
+                return null;
+              })}
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Próximo
+              </button>
+            </div>
+          )}
         </section>
       </main>
 
