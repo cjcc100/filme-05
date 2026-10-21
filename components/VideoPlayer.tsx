@@ -20,90 +20,143 @@ export default function VideoPlayer({
   onClose 
 }: VideoPlayerProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [plyrLoaded, setPlyrLoaded] = useState(false);
   const streamUrl = getStreamUrl(fileName);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<any>(null);
+
+  // Carregar Plyr CSS e JS
+  useEffect(() => {
+    if (plyrLoaded) return;
+
+    // Carregar CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.plyr.io/3.8.4/plyr.css';
+    document.head.appendChild(link);
+
+    // Carregar JS
+    const script = document.createElement('script');
+    script.src = 'https://cdn.plyr.io/3.8.4/plyr.js';
+    script.async = true;
+    script.onload = () => {
+      setPlyrLoaded(true);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.head.removeChild(link);
+      document.body.removeChild(script);
+    };
+  }, [plyrLoaded]);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  // Tracking de progresso do vídeo
+  // Inicializar Plyr
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    if (!videoRef.current || !plyrLoaded || !isVisible) return;
 
+    // @ts-ignore
+    const player = new (window as any).Plyr('#player', {
+      controls: [
+        'play-large',
+        'play',
+        'progress',
+        'current-time',
+        'mute',
+        'volume',
+        'captions',
+        'settings',
+        'pip',
+        'airplay',
+        'fullscreen',
+      ],
+      previewThumbnails: {
+        enabled: false,
+      },
+    });
+
+    playerRef.current = player;
+
+    // Salvar histórico quando o vídeo carregar
+    player.on('ready', async () => {
+      const duration = player.duration;
+      console.log('Vídeo carregado, duração:', duration);
+      console.log('Salvando histórico com tmdb_id:', tmdbId);
+      await saveWatchHistory({
+        titulo: movieTitle,
+        capa_url: moviePoster,
+        duracao_total: Math.floor(duration),
+        posicao_segundos: 0,
+        status: 'assistindo',
+        ultimo_acesso: new Date().toISOString(),
+        tmdb_id: tmdbId,
+      });
+    });
+
+    // Tracking de progresso
     let saveInterval: NodeJS.Timeout;
 
-    const handleTimeUpdate = () => {
-      const currentTime = video.currentTime;
-      const duration = video.duration;
-
-      if (duration > 0) {
-        // Salvar posição a cada 10 segundos
-        console.log(`Progresso: ${currentTime}s / ${duration}s`);
-      }
-    };
-
-    const handlePlay = () => {
+    player.on('play', () => {
       console.log('Video iniciado');
-      // Iniciar timer para salvar posição
       saveInterval = setInterval(() => {
-        if (video.duration > 0) {
+        const duration = player.duration;
+        const currentTime = player.currentTime;
+        if (duration > 0) {
           updateWatchPosition(
             movieTitle,
-            Math.floor(video.currentTime),
-            Math.floor(video.duration),
+            Math.floor(currentTime),
+            Math.floor(duration),
             tmdbId
           );
         }
-      }, 10000); // Salva a cada 10 segundos
-    };
+      }, 10000);
+    });
 
-    const handlePause = () => {
+    player.on('pause', () => {
       console.log('Video pausado');
       if (saveInterval) {
         clearInterval(saveInterval);
       }
-      // Salvar posição ao pausar
-      if (video.duration > 0) {
+      const duration = player.duration;
+      const currentTime = player.currentTime;
+      if (duration > 0) {
         updateWatchPosition(
           movieTitle,
-          Math.floor(video.currentTime),
-          Math.floor(video.duration),
+          Math.floor(currentTime),
+          Math.floor(duration),
           tmdbId
         );
       }
-    };
+    });
 
-    const handleEnded = () => {
+    player.on('ended', () => {
       console.log('Video finalizado');
       if (saveInterval) {
         clearInterval(saveInterval);
       }
-      // Marcar como assistido
-      updateWatchPosition(
-        movieTitle,
-        Math.floor(video.duration),
-        Math.floor(video.duration),
-        tmdbId
-      );
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('ended', handleEnded);
+      const duration = player.duration;
+      if (duration > 0) {
+        updateWatchPosition(
+          movieTitle,
+          Math.floor(duration),
+          Math.floor(duration),
+          tmdbId
+        );
+      }
+    });
 
     return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('ended', handleEnded);
       if (saveInterval) {
         clearInterval(saveInterval);
       }
+      if (player) {
+        player.destroy();
+      }
     };
-  }, [movieTitle]);
+  }, [plyrLoaded, isVisible, streamUrl, movieTitle, moviePoster, tmdbId]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -123,14 +176,17 @@ export default function VideoPlayer({
 
   const handleClose = async () => {
     // Salvar posição final antes de fechar
-    const video = videoRef.current;
-    if (video && video.duration > 0) {
-      await updateWatchPosition(
-        movieTitle,
-        Math.floor(video.currentTime),
-        Math.floor(video.duration),
-        tmdbId
-      );
+    if (playerRef.current) {
+      const duration = playerRef.current.duration;
+      const currentTime = playerRef.current.currentTime;
+      if (duration > 0) {
+        await updateWatchPosition(
+          movieTitle,
+          Math.floor(currentTime),
+          Math.floor(duration),
+          tmdbId
+        );
+      }
     }
 
     setIsVisible(false);
@@ -153,29 +209,12 @@ export default function VideoPlayer({
         <div className="relative w-full max-w-6xl mx-4">
           <div className="relative w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden">
             <video
+              id="player"
               ref={videoRef}
               src={streamUrl}
-              className="absolute inset-0 h-full w-full bg-black"
-              controls
-              autoPlay
               playsInline
-              onLoadedMetadata={async () => {
-                // Salvar histórico inicial quando o vídeo carregar
-                const video = videoRef.current;
-                if (video) {
-                  console.log('Vídeo carregado, duração:', video.duration);
-                  console.log('Salvando histórico com tmdb_id:', tmdbId);
-                  await saveWatchHistory({
-                    titulo: movieTitle,
-                    capa_url: moviePoster,
-                    duracao_total: Math.floor(video.duration),
-                    posicao_segundos: 0,
-                    status: 'assistindo',
-                    ultimo_acesso: new Date().toISOString(),
-                    tmdb_id: tmdbId,
-                  });
-                }
-              }}
+              controls
+              data-poster={moviePoster || undefined}
             />
           </div>
 
